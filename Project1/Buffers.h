@@ -2,10 +2,14 @@
 #define BUFFERS_H
 
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
 #include <iostream>
 
 struct BufferObjects {
+private:
+    void generate_vertices_and_elements_buffers();
+    void bind_buffers_to_arrays(GLsizeiptr vertices_size, const void* vertices_data, GLsizeiptr vertices_index_size, const void* vertices_index_data);
+    void enable_vertex_attributes();
+public:
 	uint32_t _VBO{};
 	uint32_t _VAO{};
 	uint32_t _EBO{};
@@ -15,22 +19,20 @@ struct BufferObjects {
     {
             glGenVertexArrays(1, &_VAO);
 
-            glGenBuffers(1, &_VBO);
-            glGenBuffers(1, &_EBO);
+            GLsizeiptr vertices_size = vertices.size() * sizeof(float);
+            GLsizeiptr vertices_index_size = vertices_indices.size() * sizeof(int);
 
-            glBindVertexArray(_VAO);
+            generate_vertices_and_elements_buffers();
+            bind_buffers_to_arrays(vertices_size, vertices.data(), vertices_index_size, vertices_indices.data());
+            enable_vertex_attributes();
 
-            glBindBuffer(GL_ARRAY_BUFFER, _VBO);
-            glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+            //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    }
 
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _EBO);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, vertices_indices.size() * sizeof(int), vertices_indices.data(), GL_STATIC_DRAW);
-
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-            glEnableVertexAttribArray(0);
-
-            glBindVertexArray(0);
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    ~BufferObjects() noexcept {
+        glDeleteVertexArrays(1, &_VAO);
+        glDeleteBuffers(1, &_VBO);
+        glDeleteBuffers(1, &_EBO);
     }
 };
 

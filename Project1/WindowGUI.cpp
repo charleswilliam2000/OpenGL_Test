@@ -21,8 +21,9 @@ void Window::run() const {
         glClear(GL_COLOR_BUFFER_BIT);
 
         Shader_Methods::useShaderProgram(shaderProgram->_shaderProgram);
-        glBindVertexArray(*VAO);
-        glDrawElements(GL_TRIANGLES, Shape_Indices::Triangle, GL_UNSIGNED_INT, 0);
+
+        glBindVertexArray(*VAO);        
+        glDrawElements(GL_TRIANGLES, Shape_Indices::Triangle * NUM_TRIANGLES, GL_UNSIGNED_INT, 0);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
