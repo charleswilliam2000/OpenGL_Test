@@ -13,10 +13,10 @@ namespace Shape_Indices {
 };
 
 namespace Shapes {
-    extern std::array<float, 18 * NUM_TRIANGLES> triangle_vertices;
+    extern std::array<float, 24 * NUM_TRIANGLES> triangle_vertices;
     extern std::array<uint32_t, Shape_Indices::Triangle * NUM_TRIANGLES> triangle_indices;
 
-    extern std::array<float, 12 * NUM_RECTANGLES> rectangle_vertices;
+    extern std::array<float, 32 * NUM_RECTANGLES> rectangle_vertices;
     extern std::array<uint32_t, Shape_Indices::Rectangle * NUM_RECTANGLES> rectangle_indices;
 }
 

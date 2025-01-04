@@ -4,6 +4,19 @@
 #include <glad/glad.h>
 #include <iostream>
 
+constexpr unsigned char NUM_VAO = 1;
+constexpr unsigned char NUM_VBO = 1;
+constexpr unsigned char NUM_EBO = 1;
+
+struct VertexAttributes {
+    GLuint index{};
+    GLint componentCount{};
+    GLenum type{};
+    GLboolean normalized{};
+    GLsizei stride{};
+    const void* offset{};
+};
+
 struct BufferObjects {
 private:
     void generate_vertices_and_elements_buffers();

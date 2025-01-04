@@ -19,11 +19,12 @@ void Window::run() const {
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
+        glBindTexture(GL_TEXTURE_2D, *texture);
 
         Shader_Methods::useShaderProgram(shaderProgram->_shaderProgram);
 
         glBindVertexArray(*VAO);        
-        glDrawElements(GL_TRIANGLES, Shape_Indices::Triangle * NUM_TRIANGLES, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, Shape_Indices::Rectangle * NUM_RECTANGLES, GL_UNSIGNED_INT, 0);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -46,4 +47,8 @@ void WindowGUI_Methods::insertShader(Window* window, ShaderProgram* shaderProgra
 
 void WindowGUI_Methods::insertVAO(Window* window, uint32_t* VAO) {
     window->VAO = VAO;
+}
+
+void WindowGUI_Methods::insertTexture(Window* window, uint32_t* Texture) {
+    window->texture = Texture;
 }

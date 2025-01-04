@@ -3,7 +3,9 @@
 
 #include <iostream>
 
+#define STB_IMAGE_IMPLEMENTATION
 #include "Buffers.h"
+#include "Texture.h"
 #include "WindowGUI.h"
 
 constexpr auto WINDOW_HEIGHT = 800;
@@ -26,19 +28,19 @@ int main() {
         }
 
         ShaderProgram shaderProgram("vertex_shader.glsl", "fragment_shader.glsl");
-        BufferObjects bufferObjects(Shapes::triangle_vertices, Shapes::triangle_indices);
+        BufferObjects bufferObjects(Shapes::rectangle_vertices, Shapes::rectangle_indices);
+        Texture texture("wall.jpg");
 
         WindowGUI_Methods::insertShader(&window, &shaderProgram);
         WindowGUI_Methods::insertVAO(&window, &bufferObjects._VAO);
+        WindowGUI_Methods::insertTexture(&window, &texture._textureID);
 
         window.run();
 
         Buffers_Methods::terminateBufferObjects(bufferObjects);
         glDeleteProgram(shaderProgram._shaderProgram);
-
-        glfwTerminate();
     }
     catch (const std::runtime_error& e) { std::cout << e.what(); }
-
+    glfwTerminate();
     return 0;
 }

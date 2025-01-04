@@ -12,7 +12,8 @@
 struct Window {
     GLFWwindow* window = nullptr;
     ShaderProgram* shaderProgram = nullptr;
-    uint32_t* VAO = 0;
+    uint32_t* texture = nullptr;
+    uint32_t* VAO = nullptr;
 
     Window(int width, int height, const char* title, GLFWmonitor* monitor = nullptr, GLFWwindow* share = nullptr);
     void run() const;
@@ -28,6 +29,7 @@ namespace WindowGUI_Methods {
 
     void insertShader(Window* window, ShaderProgram* shaderProgram);
     void insertVAO(Window* window, uint32_t* VAO);
+    void insertTexture(Window* window, uint32_t* Texture);
 }
 
 #endif WINDOWGUI_H
