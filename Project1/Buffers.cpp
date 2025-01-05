@@ -2,8 +2,8 @@
 
 
 void BufferObjects::generate_vertices_and_elements_buffers() {
-    glGenBuffers(NUM_VBO, &_VBO);
-    glGenBuffers(NUM_EBO, &_EBO);
+    glGenBuffers(Constants::NUM_VBO, &_VBO);
+    glGenBuffers(Constants::NUM_EBO, &_EBO);
 }
 
 void BufferObjects::bind_buffers_to_arrays(GLsizeiptr vertices_size, const void* vertices_data, GLsizeiptr vertices_index_size, const void* vertices_index_data) {
@@ -30,7 +30,7 @@ void BufferObjects::enable_vertex_attributes() {
 }
 
 void Buffers_Methods::terminateBufferObjects(BufferObjects& bufferObjects) {
-    glDeleteVertexArrays(NUM_VAO, &bufferObjects._VAO);
-    glDeleteBuffers(NUM_VBO, &bufferObjects._VBO);
-    glDeleteBuffers(NUM_EBO, &bufferObjects._EBO);
+    glDeleteVertexArrays(Constants::NUM_VAO, &bufferObjects._VAO);
+    glDeleteBuffers(Constants::NUM_VBO, &bufferObjects._VBO);
+    glDeleteBuffers(Constants::NUM_EBO, &bufferObjects._EBO);
 }

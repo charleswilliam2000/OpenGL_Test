@@ -4,9 +4,9 @@
 #include <glad/glad.h>
 #include <iostream>
 
-#include "stb_image.h"
+#include "Constants.h"
 
-constexpr unsigned char NUM_TEXTURES = 1;
+#include "stb_image.h"
 
 struct Texture_Configs {
 	unsigned char* _data{};
@@ -15,7 +15,7 @@ struct Texture_Configs {
 
 namespace Texture_Methods {
 	Texture_Configs loadTexture(const char* image_path);
-	void activateTexture(const uint32_t& textureID);
+	void activateTexture(const uint32_t& textureID, GLenum textureUnit = GL_TEXTURE0);
 }
 
 struct Texture {

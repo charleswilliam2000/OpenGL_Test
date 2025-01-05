@@ -40,6 +40,12 @@ void Shader_Methods::useShaderProgram(const uint32_t& shaderProgram) {
     glUseProgram(shaderProgram);
 }
 
+void Shader_Methods::setUniformMat4(const uint32_t& shaderProgram, const char* name, const glm::mat4& matrix)
+{
+    uint32_t location = glGetUniformLocation(shaderProgram, name);
+    glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
+}
+
 ShaderProgram::ShaderProgram(const char* vertexPath, const char* fragmentPath) {
     if (!vertexPath && !fragmentPath)
         throw std::runtime_error("Neither vertexPath, or fragmentPath was specified");

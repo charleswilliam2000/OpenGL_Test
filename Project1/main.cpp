@@ -9,7 +9,7 @@ int main() {
             throw std::runtime_error("Unable to initialize GLFW");
         }
 
-        Window window(WINDOW_HEIGHT, WINDOW_WIDTH, "OpenGL_window");
+        Window window(Constants::WINDOW_HEIGHT, Constants::WINDOW_WIDTH, "OpenGL_window");
 
         glfwSwapInterval(1); // Enable vsync
 
@@ -24,10 +24,11 @@ int main() {
         BufferObjects bufferObjects(Shapes::cube_vertices, Shapes::cube_indices);
         Texture texture("wall.jpg");
 
-        WindowGUI_Methods::insertShader(&window, &shaderProgram._shaderProgram);
-        WindowGUI_Methods::insertVAO(&window, &bufferObjects._VAO);
-        WindowGUI_Methods::insertTexture(&window, &texture._textureID);
+        Renderer renderer;
+        renderer.addShaderProgram(shaderProgram._shaderProgram);
+        renderer.addRenderData(bufferObjects._VAO, texture._textureID, Shape_Indices::Cube);
 
+        window.associateRenderer(renderer);
         window.run();
 
         Buffers_Methods::terminateBufferObjects(bufferObjects);

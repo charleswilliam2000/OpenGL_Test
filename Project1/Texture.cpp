@@ -7,16 +7,15 @@ namespace Texture_Methods {
 	
 		return { image_data, width, height, num_channels };
 	}
-	void activateTexture(const uint32_t& textureID)
-	{
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, textureID);
+	void activateTexture(const uint32_t& textureID, GLenum textureUnit) {
+		glActiveTexture(textureUnit); 
+		glBindTexture(GL_TEXTURE_2D, textureID); 
 	}
 }
 
 Texture::Texture(const char* image_path)
 {
-	glGenTextures(NUM_TEXTURES, &_textureID);
+	glGenTextures(Constants::NUM_TEXTURES, &_textureID);
 	glBindTexture(GL_TEXTURE_2D, _textureID);
 
 	//Wrapping & flitering

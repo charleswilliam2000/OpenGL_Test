@@ -4,9 +4,7 @@
 #include <glad/glad.h>
 #include <iostream>
 
-constexpr unsigned char NUM_VAO = 1;
-constexpr unsigned char NUM_VBO = 1;
-constexpr unsigned char NUM_EBO = 1;
+#include "Constants.h"
 
 struct VertexAttributes {
     GLuint index{};

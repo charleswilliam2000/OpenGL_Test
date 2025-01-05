@@ -137,6 +137,8 @@
   <ItemGroup>
     <ClCompile Include="..\third_party\GLAD\src\glad.c" />
     <ClCompile Include="Buffers.cpp" />
+    <ClCompile Include="Render.cpp" />
+    <ClCompile Include="Render.h" />
     <ClCompile Include="FileUtils.cpp" />
     <ClCompile Include="FileUtils.h" />
     <ClCompile Include="Shader.cpp" />
@@ -148,6 +150,7 @@
   <ItemGroup>
     <ClInclude Include="Buffers.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="Constants.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Shape.h" />
     <ClInclude Include="stb_image.h" />

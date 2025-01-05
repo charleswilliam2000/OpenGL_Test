@@ -2,6 +2,11 @@
 #define SHADER_H
 
 #include <glad/glad.h>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include <iostream>
 
 #include "FileUtils.h"
@@ -12,6 +17,7 @@ namespace Shader_Methods {
 
 	uint32_t compileShader(const char* source, const GLenum& type);
 	void useShaderProgram(const uint32_t& shaderProgram);
+	void setUniformMat4(const uint32_t& shaderProgram, const char* name, const glm::mat4& matrix);
 }
 
 struct ShaderProgram {

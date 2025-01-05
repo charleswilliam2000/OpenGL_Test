@@ -2,9 +2,13 @@
 #define SHAPE_H
 
 #include <array>
+#include "Constants.h"
 
-constexpr unsigned char NUM_TRIANGLES = 1;
-constexpr unsigned char NUM_RECTANGLES = 1;
+namespace Vertex_Data {
+    constexpr unsigned char Triangle = 24;
+    constexpr unsigned char Rectangle = 32;
+    constexpr unsigned char Cube = 192;
+}
 
 namespace Shape_Indices {
     constexpr unsigned char Triangle = 3;
@@ -14,13 +18,13 @@ namespace Shape_Indices {
 };
 
 namespace Shapes {
-    extern std::array<float, 24 * NUM_TRIANGLES> triangle_vertices;
-    extern std::array<uint32_t, Shape_Indices::Triangle * NUM_TRIANGLES> triangle_indices;
+    extern std::array<float, Vertex_Data::Triangle * Constants::NUM_TRIANGLES> triangle_vertices;
+    extern std::array<uint32_t, Shape_Indices::Triangle * Constants::NUM_TRIANGLES> triangle_indices;
 
-    extern std::array<float, 32 * NUM_RECTANGLES> rectangle_vertices;
-    extern std::array<uint32_t, Shape_Indices::Rectangle * NUM_RECTANGLES> rectangle_indices;
+    extern std::array<float, Vertex_Data::Rectangle * Constants::NUM_RECTANGLES> rectangle_vertices;
+    extern std::array<uint32_t, Shape_Indices::Rectangle * Constants::NUM_RECTANGLES> rectangle_indices;
 
-    extern std::array<float, 192> cube_vertices;
+    extern std::array<float, Vertex_Data::Cube> cube_vertices;
     extern std::array<uint32_t, Shape_Indices::Cube> cube_indices;
 }
 
