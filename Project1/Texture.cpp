@@ -7,6 +7,11 @@ namespace Texture_Methods {
 	
 		return { image_data, width, height, num_channels };
 	}
+	void activateTexture(const uint32_t& textureID)
+	{
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, textureID);
+	}
 }
 
 Texture::Texture(const char* image_path)

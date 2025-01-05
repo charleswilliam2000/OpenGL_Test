@@ -1,15 +1,6 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-
-#include <iostream>
-
 #define STB_IMAGE_IMPLEMENTATION
 #include "Buffers.h"
-#include "Texture.h"
 #include "WindowGUI.h"
-
-constexpr auto WINDOW_HEIGHT = 800;
-constexpr auto WINDOW_WIDTH = 600;
 
 int main() {
     try {
@@ -27,11 +18,13 @@ int main() {
             throw std::runtime_error("Unable to initialize GLAD");
         }
 
+        glEnable(GL_DEPTH_TEST);
+
         ShaderProgram shaderProgram("vertex_shader.glsl", "fragment_shader.glsl");
-        BufferObjects bufferObjects(Shapes::rectangle_vertices, Shapes::rectangle_indices);
+        BufferObjects bufferObjects(Shapes::cube_vertices, Shapes::cube_indices);
         Texture texture("wall.jpg");
 
-        WindowGUI_Methods::insertShader(&window, &shaderProgram);
+        WindowGUI_Methods::insertShader(&window, &shaderProgram._shaderProgram);
         WindowGUI_Methods::insertVAO(&window, &bufferObjects._VAO);
         WindowGUI_Methods::insertTexture(&window, &texture._textureID);
 

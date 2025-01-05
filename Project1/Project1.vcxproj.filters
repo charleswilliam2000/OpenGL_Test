@@ -18,13 +18,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
     <None Include="vertex_shader.glsl">
       <Filter>Source Files\Shaders</Filter>
     </None>
     <None Include="fragment_shader.glsl">
       <Filter>Source Files\Shaders</Filter>
     </None>
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">

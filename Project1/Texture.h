@@ -15,6 +15,7 @@ struct Texture_Configs {
 
 namespace Texture_Methods {
 	Texture_Configs loadTexture(const char* image_path);
+	void activateTexture(const uint32_t& textureID);
 }
 
 struct Texture {

@@ -10,6 +10,7 @@ namespace Shape_Indices {
     constexpr unsigned char Triangle = 3;
     constexpr unsigned char Rectangle = 6;
     constexpr unsigned char Hexagon = 12;
+    constexpr unsigned char Cube = 36;
 };
 
 namespace Shapes {
@@ -18,6 +19,9 @@ namespace Shapes {
 
     extern std::array<float, 32 * NUM_RECTANGLES> rectangle_vertices;
     extern std::array<uint32_t, Shape_Indices::Rectangle * NUM_RECTANGLES> rectangle_indices;
+
+    extern std::array<float, 192> cube_vertices;
+    extern std::array<uint32_t, Shape_Indices::Cube> cube_indices;
 }
 
-#endif
+#endif // SHAPE_H
