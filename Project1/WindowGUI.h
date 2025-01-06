@@ -21,7 +21,8 @@ private:
 public:
     Window(int width, int height, const char* title, GLFWmonitor* monitor = nullptr, GLFWwindow* share = nullptr);
     void associateRenderer(Renderer& renderer);
-    void run() const;
+    void insertCamera(Camera& camera);
+    void run();
 
     ~Window() {}
 

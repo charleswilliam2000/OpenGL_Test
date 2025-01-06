@@ -25,6 +25,10 @@ int main() {
 
         Renderer renderer = buildRenderer(bufferObjects._VAO, texture._textureID);
         window.associateRenderer(renderer);
+
+        Camera camera({ glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f) });
+        window.insertCamera(camera);
+
         window.run();
 
         Buffers_Methods::terminateBufferObjects(bufferObjects);

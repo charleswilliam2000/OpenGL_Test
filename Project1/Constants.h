@@ -12,7 +12,7 @@ namespace Constants {
 	constexpr unsigned char NUM_TEXTURES = 1;
 	constexpr unsigned char NUM_TRIANGLES = 1;
 	constexpr unsigned char NUM_RECTANGLES = 1;
-	
+
 }
 
 #endif // CONSTANTS_H

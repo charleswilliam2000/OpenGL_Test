@@ -25,7 +25,6 @@ using RenderData = std::vector<Drawable>;
 
 class Renderer {
 private:
-	Camera _camera{};
 	RenderData _data{};
 	uint32_t _shaderProgram{};
 
@@ -36,7 +35,7 @@ public:
 	void addShaderProgram(uint32_t shaderProgram);
 	void terminateShaderProgram();
 	void addRenderData(uint32_t VAO, uint32_t textureID, uint32_t indices);
-	void render() const;
+	void render(const glm::mat4& cameraView) const;
 };
 
 inline Renderer buildRenderer(const uint32_t& VAO, const uint32_t& textureID) {

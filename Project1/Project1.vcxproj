@@ -137,6 +137,7 @@
   <ItemGroup>
     <ClCompile Include="..\third_party\GLAD\src\glad.c" />
     <ClCompile Include="Buffers.cpp" />
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Render.cpp" />
     <ClCompile Include="Render.h" />
     <ClCompile Include="FileUtils.cpp" />

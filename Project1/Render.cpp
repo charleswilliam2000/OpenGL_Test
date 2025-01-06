@@ -12,13 +12,11 @@ void Renderer::addRenderData(uint32_t VAO, uint32_t textureID, uint32_t indices)
 	_data.emplace_back(VAO, textureID, indices);
 }
 
-void Renderer::render() const {
+void Renderer::render(const glm::mat4& cameraView) const {
 	uint32_t lastTexture = 0; 
 
 	Shader_Methods::useShaderProgram(_shaderProgram);
-
-	glm::mat4 view = glm::lookAt(_camera.cameraPos, _camera.cameraPos + _camera.cameraFront, _camera.cameraUp);
-	Shader_Methods::setUniformMat4(_shaderProgram, "view", view);
+	Shader_Methods::setUniformMat4(_shaderProgram, "view", cameraView);
 
 	for (const auto& drawable : _data) {
 		glBindVertexArray(drawable.VAO);
