@@ -20,19 +20,15 @@ int main() {
 
         glEnable(GL_DEPTH_TEST);
 
-        ShaderProgram shaderProgram("vertex_shader.glsl", "fragment_shader.glsl");
         BufferObjects bufferObjects(Shapes::cube_vertices, Shapes::cube_indices);
         Texture texture("wall.jpg");
 
-        Renderer renderer;
-        renderer.addShaderProgram(shaderProgram._shaderProgram);
-        renderer.addRenderData(bufferObjects._VAO, texture._textureID, Shape_Indices::Cube);
-
+        Renderer renderer = buildRenderer(bufferObjects._VAO, texture._textureID);
         window.associateRenderer(renderer);
         window.run();
 
         Buffers_Methods::terminateBufferObjects(bufferObjects);
-        glDeleteProgram(shaderProgram._shaderProgram);
+        renderer.terminateShaderProgram();
     }
     catch (const std::runtime_error& e) { std::cout << e.what(); }
     glfwTerminate();

@@ -6,10 +6,7 @@
 
 #include <iostream>
 
-#include "Shader.h"
-#include "Texture.h"
 #include "Render.h"
-
 
 namespace Callbacks {
     void framebuffer_size_callback(GLFWwindow* window, int height, int width);
@@ -19,6 +16,7 @@ namespace Callbacks {
 class Window {
 private:
     GLFWwindow* _window = nullptr;
+    Camera _camera;
     Renderer* _renderer = nullptr;
 public:
     Window(int width, int height, const char* title, GLFWmonitor* monitor = nullptr, GLFWwindow* share = nullptr);

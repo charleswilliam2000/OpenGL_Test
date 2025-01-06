@@ -31,7 +31,7 @@ public:
             glGenVertexArrays(1, &_VAO);
 
             GLsizeiptr vertices_size = vertices.size() * sizeof(float);
-            GLsizeiptr vertices_index_size = vertices_indices.size() * sizeof(int);
+            GLsizeiptr vertices_index_size = vertices_indices.size() * sizeof(uint32_t);
 
             generate_vertices_and_elements_buffers();
             bind_buffers_to_arrays(vertices_size, vertices.data(), vertices_index_size, vertices_indices.data());

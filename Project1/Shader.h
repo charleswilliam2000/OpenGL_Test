@@ -24,9 +24,6 @@ struct ShaderProgram {
 	uint32_t _shaderProgram = 0;
 
 	ShaderProgram(const char* vertexPath = nullptr, const char* fragmentPath = nullptr);
-	~ShaderProgram() noexcept {
-		std::cout << "\nShaderProgram deleted!";
-	}
 };
 
 #endif // SHADER_H

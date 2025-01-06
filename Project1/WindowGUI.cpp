@@ -20,8 +20,10 @@ Window::Window(int width, int height, const char* title, GLFWmonitor* monitor, G
 
 void Window::run() const {
 
-    while (!glfwWindowShouldClose(_window)) {
+    float deltaTime = 0.0f;
+    float lastFrame = 0.0f;
 
+    while (!glfwWindowShouldClose(_window)) {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -44,7 +46,7 @@ void Callbacks::key_callback(GLFWwindow* window, int key, int scancode, int acti
     }
 
     static bool wireframeMode = false;
-    if (key == GLFW_KEY_W && action == GLFW_PRESS) {
+    if (key == GLFW_KEY_B && action == GLFW_PRESS) {
         wireframeMode = !wireframeMode;
 
         if (wireframeMode) {
