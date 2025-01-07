@@ -8,8 +8,8 @@ void Renderer::terminateShaderProgram() {
 	glDeleteProgram(_shaderProgram);
 }
 
-void Renderer::addRenderData(uint32_t VAO, uint32_t textureID, uint32_t indices) {
-	_data.emplace_back(VAO, textureID, indices);
+void Renderer::addRenderData(uint32_t VAO, uint32_t textureID, uint32_t indices, glm::vec3 coordinate) {
+	_data.emplace_back(VAO, textureID, indices, coordinate);
 }
 
 void Renderer::render(const glm::mat4& cameraView) const {
@@ -24,7 +24,12 @@ void Renderer::render(const glm::mat4& cameraView) const {
 			Texture_Methods::activateTexture(drawable.texture, GL_TEXTURE0);
 			lastTexture = drawable.texture;
 		}
-		have_3D_Object_Rotate(_shaderProgram);
+		glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)Constants::WINDOW_WIDTH / (float)Constants::WINDOW_HEIGHT, 0.1f, 100.0f);
+		glm::mat4 model = glm::translate(glm::mat4(1.0f), drawable.coordinate);
+
+		Shader_Methods::setUniformMat4(_shaderProgram, "projection", projection);
+		Shader_Methods::setUniformMat4(_shaderProgram, "model", model);
+
 		draw(drawable.VAO, drawable.indices);
 	}
 }

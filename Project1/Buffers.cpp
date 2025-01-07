@@ -18,9 +18,8 @@ void BufferObjects::bind_buffers_to_arrays(GLsizeiptr vertices_size, const void*
 
 void BufferObjects::enable_vertex_attributes() {
     VertexAttributes attributes[] = {
-        {0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0},            //Coordinates
-        {1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float))},  //Colors (RGB)
-        {2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)) } // Textures
+        {0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0},            //Coordinates
+        {1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)) } // Textures
     };
 
     for (const auto& attribute : attributes) {

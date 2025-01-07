@@ -1,14 +1,36 @@
 #include "WindowGUI.h"
 
-void Window::associateRenderer(Renderer& renderer) {
-    _renderer = &renderer;
+void Screen::processMouseMovement(double xInPos, double yInPos) {
+    static bool firstMouse = true;
+    static float lastX = Constants::WINDOW_HEIGHT / 2;
+    static float lastY = Constants::WINDOW_WIDTH / 2;
+
+    float xpos = static_cast<float>(xInPos);
+    float ypos = static_cast<float>(yInPos);
+
+    if (firstMouse) {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+    float xOffset = xpos - lastX;
+    float yOffset = lastY - ypos;
+
+    lastX = xpos;
+    lastY = ypos;
+
+    camera->handleMouseMovement(xOffset, yOffset);
 }
 
-void Window::insertCamera(Camera& camera) {
-    _camera = std::move(camera);
+void Screen::associateRenderer(Renderer& in_renderer) {
+    renderer = &in_renderer;
 }
 
-Window::Window(int width, int height, const char* title, GLFWmonitor* monitor, GLFWwindow* share)
+void Screen::insertCamera(Camera& in_camera) {
+    camera = &in_camera;
+}
+
+Screen::Screen(int width, int height, const char* title, GLFWmonitor* monitor, GLFWwindow* share)
     : _window(glfwCreateWindow(width, height, title, monitor, share)) {
     //For future extensions, add here
     if (!_window) {
@@ -18,22 +40,27 @@ Window::Window(int width, int height, const char* title, GLFWmonitor* monitor, G
     }
 
     glfwMakeContextCurrent(_window);
+
+    glfwSetWindowUserPointer(_window, this);
     glfwSetKeyCallback(_window, Callbacks::key_callback);
+    glfwSetCursorPosCallback(_window, Callbacks::mouse_callback);
     glfwSetFramebufferSizeCallback(_window, Callbacks::framebuffer_size_callback);
+
+    glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
-void Window::run() {
+void Screen::run() const {
     while (!glfwWindowShouldClose(_window)) {
 
-        Camera_Methods::updateFrame(_camera._frame);
-        Camera_Methods::handleMovement(_camera, _window);
+        camera->updateFrame();
+        camera->handleCameraMovement(_window);
 
-        glm::mat4 currCameraView = Camera_Methods::updateCameraView(_camera._vectors);
+        glm::mat4 currCameraView = camera->updateCameraView();
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        _renderer->render(currCameraView);
+        renderer->render(currCameraView);
             
         glfwSwapBuffers(_window);
         glfwPollEvents();
@@ -44,6 +71,13 @@ void Window::run() {
 
 void Callbacks::framebuffer_size_callback(GLFWwindow* window, int height, int width) {
     glViewport(0, 0, height, width);
+}
+
+void Callbacks::mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+    Screen* windowInstance = static_cast<Screen*>(glfwGetWindowUserPointer(window));
+    if (!windowInstance) return;
+
+    windowInstance->processMouseMovement(xpos, ypos);
 }
 
 void Callbacks::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {

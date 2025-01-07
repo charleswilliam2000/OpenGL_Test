@@ -17,8 +17,9 @@ struct Drawable {
 	uint32_t VAO{};
 	uint32_t texture{};
 	uint32_t indices{};
+	glm::vec3 coordinate{};
 
-	Drawable(uint32_t VAO, uint32_t texture, uint32_t indices) : VAO(VAO), texture(texture), indices(indices) {}
+	Drawable(uint32_t VAO, uint32_t texture, uint32_t indices, glm::vec3 coordinate) : VAO(VAO), texture(texture), indices(indices), coordinate(coordinate) {}
 
 };
 using RenderData = std::vector<Drawable>;
@@ -34,17 +35,8 @@ private:
 public:
 	void addShaderProgram(uint32_t shaderProgram);
 	void terminateShaderProgram();
-	void addRenderData(uint32_t VAO, uint32_t textureID, uint32_t indices);
+	void addRenderData(uint32_t VAO, uint32_t textureID, uint32_t indices, glm::vec3 coordinate);
 	void render(const glm::mat4& cameraView) const;
 };
-
-inline Renderer buildRenderer(const uint32_t& VAO, const uint32_t& textureID) {
-	Renderer renderer;
-	ShaderProgram shaderProgram("vertex_shader.glsl", "fragment_shader.glsl");
-	renderer.addShaderProgram(shaderProgram._shaderProgram);
-	renderer.addRenderData(VAO, textureID, Shape_Indices::Cube);
-
-	return renderer;
-}
 
 #endif // RENDER_H
