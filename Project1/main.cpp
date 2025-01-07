@@ -24,7 +24,7 @@ int main() {
         BufferObjects bufferObjects(Shapes::cube_vertices, Shapes::cube_indices);
         Texture texture("dirt.jpg");
 
-        std::array<glm::vec3, 5> cubeCoordinates = {
+        std::vector<glm::vec3> cubeCoordinates = {
             glm::vec3(0.0f, -1.0f, 0.0f),
             glm::vec3(1.0f, -1.0f, 0.0f),
             glm::vec3(-1.0f, -1.0f, 0.0f),
@@ -33,7 +33,7 @@ int main() {
         };
         Renderer renderer;
         renderer.addShaderProgram(shaderProgram._shaderProgram);
-        for (int i = 0; i < 5; i++) 
+        for (int i = 0; i < cubeCoordinates.size(); i++) 
             renderer.addRenderData(bufferObjects._VAO, texture._textureID, Shape_Indices::Cube, cubeCoordinates[i]);
         screen.associateRenderer(renderer);
                             //Position                  // Front                      // Up

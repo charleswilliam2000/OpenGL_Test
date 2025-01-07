@@ -7,7 +7,7 @@
 namespace Vertex_Data {
     constexpr unsigned char Triangle = 24;
     constexpr unsigned char Rectangle = 32;
-    constexpr unsigned char Cube = 120;
+    constexpr unsigned char Cube = 192;
 }
 
 namespace Shape_Indices {
