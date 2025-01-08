@@ -51,7 +51,6 @@ Screen::Screen(int width, int height, const char* title, GLFWmonitor* monitor, G
 
 void Screen::run() const {
     while (!glfwWindowShouldClose(_window)) {
-
         camera->updateFrame();
         camera->handleCameraMovement(_window);
 
@@ -94,12 +93,10 @@ void Callbacks::key_callback(GLFWwindow* window, int key, int scancode, int acti
         wireframeMode = !wireframeMode;
 
         if (wireframeMode) {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); 
             windowInstance->wireframeMode = true;
             std::cout << "Wireframe mode ON\n";
         }
         else {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             windowInstance->wireframeMode = false;
             std::cout << "Wireframe mode OFF\n";
         }

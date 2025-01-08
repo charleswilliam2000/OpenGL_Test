@@ -19,6 +19,10 @@ int main() {
         }
 
         glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+        glFrontFace(GL_CW);
+
         ShaderProgram objectShader("object_vertex_shader.glsl", "object_fragment_shader.glsl");
         ShaderProgram lightShader("light_vertex_shader.glsl", "light_fragment_shader.glsl");
         ShaderProgram wireframeShader("wireframe_vertex_shader.glsl", "wireframe_fragment_shader.glsl");
@@ -31,11 +35,11 @@ int main() {
         BufferObjects lightSource(Shapes::base_cube_vertices, Attributes_Details::lightSourceAttributes, Shapes::cube_indices);
 
         std::vector<glm::vec3> cubeCoordinates = {
-            glm::vec3(0.0f, -1.0f, 0.0f)
-            //glm::vec3(1.0f, -1.0f, 0.0f),
-            //glm::vec3(-1.0f, -1.0f, 0.0f),
-            //glm::vec3(2.0f, -1.0f, 0.0f),
-            //glm::vec3(-2.0f, -1.0f, 0.0f),
+            glm::vec3(0.0f, -1.0f, 0.0f),
+            glm::vec3(1.0f, -1.0f, 0.0f),
+            glm::vec3(-1.0f, -1.0f, 0.0f),
+            glm::vec3(2.0f, -1.0f, 0.0f),
+            glm::vec3(-2.0f, -1.0f, 0.0f)
         };
         Renderer renderer;
         renderer.addObjectShader(objectShader._shaderProgram);

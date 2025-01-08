@@ -36,10 +36,12 @@ void Renderer::render(const glm::mat4& cameraView, bool wireframeMode) const {
 	glm::mat4 lightSourceModel	= glm::translate(glm::mat4(1.0f), _lightSource.coordinate);
 
 	if (wireframeMode) {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		Shader_Methods::useShaderProgram(_wireframeShader);
 		Shader_Methods::setUniformVec3(_wireframeShader, "wireframeColors", glm::vec3(1.0f, 1.0f, 1.0f));
 	}
 	else {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		Shader_Methods::useShaderProgram(_objectShaders[0]);
 		Shader_Methods::setUniformVec3(_objectShaders[0], "lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
 		Shader_Methods::setUniformVec3(_objectShaders[0], "lightPos", _lightSource.coordinate);
