@@ -25,7 +25,7 @@ namespace Shapes {
         1, 2, 3
     };
 
-    std::array<float, Vertex_Data::Cube> cube_vertices = {
+    std::array<float, Vertex_Data::Textured_Cube> textured_cube_vertices = {
         // Coordinates         // Textures  //Normals   
         -0.5f, -0.5f, -0.5f,   0.0f, 0.0f,  0.0f, 0.0f, -1.0f,
          0.5f, -0.5f, -0.5f,   1.0f, 0.0f,  0.0f, 0.0f, -1.0f,
@@ -56,6 +56,40 @@ namespace Shapes {
          0.5f,  0.5f, -0.5f,   1.0f, 1.0f,  0.0f, 1.0f, 0.0f,
          0.5f,  0.5f,  0.5f,   1.0f, 0.0f,  0.0f, 1.0f, 0.0f,
         -0.5f,  0.5f,  0.5f,   0.0f, 0.0f,  0.0f, 1.0f, 0.0f
+    };
+
+    std::array<float, Vertex_Data::Base_Cube> base_cube_vertices = {
+        //Coordinates
+        -0.5, -0.5f, -0.5f,
+         0.5, -0.5f, -0.5f,
+         0.5, 0.5f,  -0.5f,
+        -0.5, 0.5f,  -0.5f,
+
+        -0.5, -0.5f, 0.5f,
+         0.5, -0.5f, 0.5f,
+         0.5,  0.5f, 0.5f,
+        -0.5,  0.5f, 0.5f,
+
+        -0.5,  0.5f,  0.5f,
+        -0.5,  0.5f, -0.5f,
+        -0.5, -0.5f, -0.5f,
+        -0.5, -0.5f,  0.5f,
+
+        0.5,  0.5f,   0.5f,
+        0.5,  0.5f,  -0.5f,
+        0.5,  0.5f,  -0.5f,
+        0.5, -0.5f,  -0.5f,
+        0.5, -0.5f,  -0.5f,
+
+        -0.5, -0.5f, -0.5f,
+         0.5, -0.5f, -0.5f,
+         0.5, -0.5f,  0.5f,
+        -0.5, -0.5f,  0.5f,
+
+        -0.5, 0.5f, -0.5f,
+         0.5, 0.5f, -0.5f,
+         0.5, 0.5f,  0.5f,
+        -0.5, 0.5f,  0.5f,
     };
 
     std::array<uint32_t, Shape_Indices::Cube> cube_indices = {

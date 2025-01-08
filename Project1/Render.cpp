@@ -1,37 +1,64 @@
 #include "Render.h"
 
-void Renderer::addShaderProgram(uint32_t shaderProgram) {
-	_shaderProgram = shaderProgram;
+void Renderer::addObjectShader(uint32_t objectShader) 
+{
+	_objectShaders.push_back(objectShader);
 }
 
-void Renderer::terminateShaderProgram() {
-	glDeleteProgram(_shaderProgram);
+void Renderer::addLightSourceShader(uint32_t lightSourceShader)
+{
+	_lightSourceShader = lightSourceShader;
 }
 
-void Renderer::addRenderData(uint32_t VAO, uint32_t textureID, uint32_t indices, glm::vec3 coordinate) {
-	_data.emplace_back(VAO, textureID, indices, coordinate);
+void Renderer::terminateShaderPrograms() {
+	for (auto& shaderProgram : _objectShaders)
+		glDeleteProgram(shaderProgram);
+	glDeleteProgram(_lightSourceShader);
+}
+
+void Renderer::addObjectData(const Drawable& drawable) {
+	_objectsData.push_back(drawable);
+}
+
+void Renderer::addLightSourceData(const Drawable& lightSource)
+{
+	_lightSource = lightSource;
 }
 
 void Renderer::render(const glm::mat4& cameraView) const {
-	uint32_t lastTexture = 0; 
+	uint32_t lastTexture		= 0; 
+	glm::mat4 projection		= glm::perspective(glm::radians(45.0f), (float)Constants::WINDOW_WIDTH / (float)Constants::WINDOW_HEIGHT, 0.1f, 100.0f);
+	glm::mat4 objectModel		= glm::mat4(1.0f);
+	glm::mat4 lightSourceModel	= glm::translate(glm::mat4(1.0f), _lightSource.coordinate);
 
-	Shader_Methods::useShaderProgram(_shaderProgram);
-	Shader_Methods::setUniformMat4(_shaderProgram, "view", cameraView);
+	Shader_Methods::useShaderProgram(_objectShaders[0]);
+	Shader_Methods::setUniformVec3(_objectShaders[0], "objectColor", glm::vec3(1.0f, 0.5f, 0.31f));
+	Shader_Methods::setUniformVec3(_objectShaders[0], "lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
+	Shader_Methods::setUniformVec3(_objectShaders[0], "lightPos", _lightSource.coordinate);
 
-	for (const auto& drawable : _data) {
-		glBindVertexArray(drawable.VAO);
-		if (drawable.texture != lastTexture) {
-			Texture_Methods::activateTexture(drawable.texture, GL_TEXTURE0);
-			lastTexture = drawable.texture;
+	for (const auto& object : _objectsData) {
+		if (object.texture != lastTexture) {
+			Texture_Methods::activateTexture(object.texture, GL_TEXTURE0);
+			lastTexture = object.texture;
 		}
-		glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)Constants::WINDOW_WIDTH / (float)Constants::WINDOW_HEIGHT, 0.1f, 100.0f);
-		glm::mat4 model = glm::translate(glm::mat4(1.0f), drawable.coordinate);
+		objectModel = glm::translate(objectModel, object.coordinate);
+		
+		Shader_Methods::setUniformMat4(_objectShaders[0], "projection", projection);
+		Shader_Methods::setUniformMat4(_objectShaders[0], "view", cameraView);
+		Shader_Methods::setUniformMat4(_objectShaders[0], "model", objectModel);
 
-		Shader_Methods::setUniformMat4(_shaderProgram, "projection", projection);
-		Shader_Methods::setUniformMat4(_shaderProgram, "model", model);
-
-		draw(drawable.VAO, drawable.indices);
+		glBindVertexArray(object.VAO);
+		draw(object.VAO, object.indices);
 	}
+
+	Shader_Methods::useShaderProgram(_lightSourceShader);
+	Shader_Methods::setUniformMat4(_lightSourceShader, "projection", projection);
+	Shader_Methods::setUniformMat4(_lightSourceShader, "view", cameraView);
+	Shader_Methods::setUniformMat4(_lightSourceShader, "model", lightSourceModel);
+
+	glBindVertexArray(_lightSource.VAO);
+	draw(_lightSource.VAO, _lightSource.indices);
+
 }
 
 void Renderer::have_3D_Object_Rotate(const uint32_t& shaderProgram) const {

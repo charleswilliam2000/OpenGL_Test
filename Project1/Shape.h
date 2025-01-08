@@ -7,7 +7,8 @@
 namespace Vertex_Data {
     constexpr unsigned char Triangle = 24;
     constexpr unsigned char Rectangle = 32;
-    constexpr unsigned char Cube = 192;
+    constexpr unsigned char Base_Cube = 76;
+    constexpr unsigned char Textured_Cube = 192;
 }
 
 namespace Shape_Indices {
@@ -24,7 +25,8 @@ namespace Shapes {
     extern std::array<float, Vertex_Data::Rectangle * Constants::NUM_RECTANGLES> rectangle_vertices;
     extern std::array<uint32_t, Shape_Indices::Rectangle * Constants::NUM_RECTANGLES> rectangle_indices;
 
-    extern std::array<float, Vertex_Data::Cube> cube_vertices;
+    extern std::array<float, Vertex_Data::Textured_Cube> textured_cube_vertices;
+    extern std::array<float, Vertex_Data::Base_Cube> base_cube_vertices;
     extern std::array<uint32_t, Shape_Indices::Cube> cube_indices;
 }
 

@@ -19,9 +19,12 @@ int main() {
         }
 
         glEnable(GL_DEPTH_TEST);
+        ShaderProgram objectShader("vertex_shader.glsl", "fragment_shader.glsl");
+        ShaderProgram lightShader("light_vertex_shader.glsl", "light_fragment_shader.glsl");
 
-        ShaderProgram shaderProgram("vertex_shader.glsl", "fragment_shader.glsl");
-        BufferObjects bufferObjects(Shapes::cube_vertices, Shapes::cube_indices);
+        BufferObjects cubes(Shapes::textured_cube_vertices, Attributes_Details::objectAttributes, Shapes::cube_indices); 
+        BufferObjects lightSource(Shapes::base_cube_vertices, Attributes_Details::lightSourceAttributes, std::array<uint32_t, 0>{});
+
         Texture texture("dirt.jpg");
 
         std::vector<glm::vec3> cubeCoordinates = {
@@ -32,18 +35,20 @@ int main() {
             glm::vec3(-2.0f, -1.0f, 0.0f),
         };
         Renderer renderer;
-        renderer.addShaderProgram(shaderProgram._shaderProgram);
+        renderer.addObjectShader(objectShader._shaderProgram);
         for (int i = 0; i < cubeCoordinates.size(); i++) 
-            renderer.addRenderData(bufferObjects._VAO, texture._textureID, Shape_Indices::Cube, cubeCoordinates[i]);
+            renderer.addObjectData({ cubes.VAO, texture._textureID, Shape_Indices::Cube, cubeCoordinates[i] });
+
+        renderer.addLightSourceShader(lightShader._shaderProgram);
+        renderer.addLightSourceData({ lightSource.VAO, 0, Shape_Indices::Cube, glm::vec3(0.0f, 2.0f, 0.0f) });
+
         screen.associateRenderer(renderer);
-                            //Position                  // Front                      // Up
+
         Camera camera({ glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f) });
         screen.insertCamera(camera);
-
         screen.run();
 
-        Buffers_Methods::terminateBufferObjects(bufferObjects);
-        renderer.terminateShaderProgram();
+        renderer.terminateShaderPrograms();
     }
     catch (const std::runtime_error& e) { std::cout << e.what(); }
     glfwTerminate();
