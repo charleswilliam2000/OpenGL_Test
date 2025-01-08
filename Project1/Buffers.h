@@ -18,7 +18,8 @@ struct VertexAttributes {
 };
 
 namespace Attributes_Details {
-    extern std::array<VertexAttributes, 3> objectAttributes;
+    constexpr unsigned char num_objectAttributes = 3;
+    extern std::array<VertexAttributes, num_objectAttributes> objectAttributes;
     extern std::array<VertexAttributes, 1> lightSourceAttributes;
 }
 
@@ -30,26 +31,24 @@ public:
     BufferObjects(
         const std::array<float, arr1_size>& vertexData,
         const std::array<VertexAttributes, arr2_size>& attributes,
-        const std::array<uint32_t, arr3_size>& indices = {}) {
+        const std::array<uint32_t, arr3_size>& indices) {
         glGenVertexArrays(1, &VAO);
         glGenBuffers(1, &VBO);
+        glGenBuffers(1, &EBO);
 
         glBindVertexArray(VAO);
 
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
         glBufferData(GL_ARRAY_BUFFER, vertexData.size() * sizeof(float), vertexData.data(), GL_STATIC_DRAW);
 
-        if (!indices.empty()) {
-            glGenBuffers(1, &EBO);
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
-        }
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32_t), indices.data(), GL_STATIC_DRAW);
+        
 
         for (const auto& attr : attributes) {
             glVertexAttribPointer(attr.index, attr.componentCount, attr.type, attr.normalized, attr.stride, attr.offset);
             glEnableVertexAttribArray(attr.index);
         }
-
         glBindVertexArray(0);
     }
 
@@ -58,9 +57,6 @@ public:
         if (EBO) glDeleteBuffers(1, &EBO);
         glDeleteVertexArrays(1, &VAO);
     }
-
-    void bind() const { glBindVertexArray(VAO); }
-    void unbind() const { glBindVertexArray(0); }
 };
 
 

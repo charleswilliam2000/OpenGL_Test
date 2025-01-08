@@ -40,6 +40,11 @@ void Shader_Methods::useShaderProgram(const uint32_t& shaderProgram) {
     glUseProgram(shaderProgram);
 }
 
+void Shader_Methods::setUniform1i(const uint32_t& shaderProgram, const char* name, int value) {
+    uint32_t location = glGetUniformLocation(shaderProgram, name);
+    glUniform1i(location, value);
+}
+
 void Shader_Methods::setUniformVec3(const uint32_t& shaderProgram, const char* name, const glm::vec3& vector) {
     uint32_t location = glGetUniformLocation(shaderProgram, name);
     glUniform3fv(location, 1, glm::value_ptr(vector));

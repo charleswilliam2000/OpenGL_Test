@@ -60,7 +60,7 @@ void Screen::run() const {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        renderer->render(currCameraView);
+        renderer->render(currCameraView, wireframeMode);
             
         glfwSwapBuffers(_window);
         glfwPollEvents();
@@ -81,20 +81,26 @@ void Callbacks::mouse_callback(GLFWwindow* window, double xpos, double ypos) {
 }
 
 void Callbacks::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    Screen* windowInstance = static_cast<Screen*>(glfwGetWindowUserPointer(window));
+    if (!windowInstance) return;
+    
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
     }
 
     static bool wireframeMode = false;
+
     if (key == GLFW_KEY_B && action == GLFW_PRESS) {
         wireframeMode = !wireframeMode;
 
         if (wireframeMode) {
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); 
+            windowInstance->wireframeMode = true;
             std::cout << "Wireframe mode ON\n";
         }
         else {
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            windowInstance->wireframeMode = false;
             std::cout << "Wireframe mode OFF\n";
         }
     }

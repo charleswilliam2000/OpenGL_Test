@@ -8,7 +8,6 @@ in vec3 Normal;
 
 uniform vec3 lightPos;
 uniform vec3 lightColor;
-uniform vec3 objColor;
 
 uniform sampler2D myTextures;
 
@@ -22,7 +21,7 @@ void main() {
 	float difference = max(dot(norm, lightDirection), 0.0);
 	vec3 diffuse = difference * lightColor;
 
-	vec3 result = (ambient + diffuse) * objColor;
+	vec3 result = (ambient + diffuse);
 
 	fragColors = texture(myTextures, TextureCoords) * vec4(result, 1.0);
 }	

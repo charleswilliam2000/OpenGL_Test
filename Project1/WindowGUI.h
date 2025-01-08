@@ -21,11 +21,15 @@ private:
     Renderer* renderer = nullptr;
 
 public:
+    bool wireframeMode = false;
+
     Screen(int width, int height, const char* title, GLFWmonitor* monitor = nullptr, GLFWwindow* share = nullptr);
-    void processMouseMovement(double xOffset, double yOffset);
     void run() const;
+
     void associateRenderer(Renderer& in_renderer);
     void insertCamera(Camera& in_camera);
+
+    void processMouseMovement(double xOffset, double yOffset);
 
     ~Screen() {}
 

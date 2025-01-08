@@ -7,7 +7,7 @@
 namespace Vertex_Data {
     constexpr unsigned char Triangle = 24;
     constexpr unsigned char Rectangle = 32;
-    constexpr unsigned char Base_Cube = 76;
+    constexpr unsigned char Base_Cube = 72;
     constexpr unsigned char Textured_Cube = 192;
 }
 
