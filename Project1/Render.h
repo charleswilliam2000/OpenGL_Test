@@ -1,10 +1,7 @@
 #ifndef RENDER_H
 #define RENDER_H
 
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-
-#include <iostream>
+#include "stdafx.h"
 #include <vector>
 
 #include "Shape.h"
@@ -46,7 +43,7 @@ public:
 
 	void addObjectData(const Drawable& drawable);
 	void addLightSourceData(const Drawable& lightSource);
-	void render(const glm::mat4& cameraView, bool wireframeMode) const;
+	void render(const glm::vec3& cameraPos, const glm::mat4& cameraView, bool wireframeMode) const;
 };
 
 #endif // RENDER_H

@@ -55,11 +55,12 @@ void Screen::run() const {
         camera->handleCameraMovement(_window);
 
         glm::mat4 currCameraView = camera->updateCameraView();
+        glm::vec3 currCameraPos = camera->getPosition();
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        renderer->render(currCameraView, wireframeMode);
+        renderer->render(currCameraPos, currCameraView, wireframeMode);
             
         glfwSwapBuffers(_window);
         glfwPollEvents();

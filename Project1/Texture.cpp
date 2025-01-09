@@ -15,7 +15,7 @@ namespace Texture_Methods {
 
 Texture::Texture(const char* image_path)
 {
-	glGenTextures(Constants::NUM_TEXTURES, &_textureID);
+	glGenTextures(1, &_textureID);
 	glBindTexture(GL_TEXTURE_2D, _textureID);
 
 	//Wrapping & flitering

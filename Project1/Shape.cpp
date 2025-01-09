@@ -1,18 +1,18 @@
 #include "Shape.h"
 
 namespace Shapes {
-    std::array<float, Vertex_Data::Triangle * Constants::NUM_TRIANGLES> triangle_vertices = {
+    std::array<float, Vertex_Data::Triangle> triangle_vertices = {
         // positions         // colors              //Textures
         0.5f, -0.5f, 0.0f,     1.0f, 0.0f, 0.0f,   0.0f, 0.0f,
        -0.5f, -0.5f, 0.0f,     0.0f, 1.0f, 0.0f,   1.0f, 0.0f,
         0.0f,  0.5f, 0.0f,     0.0f, 0.0f, 1.0f,   0.5f, 1.0f  
     };
 
-    std::array<uint32_t, Shape_Indices::Triangle * Constants::NUM_TRIANGLES> triangle_indices = {
+    std::array<uint32_t, Shape_Indices::Triangle> triangle_indices = {
          0, 1, 2,
     };
 
-    std::array<float, Vertex_Data::Rectangle * Constants::NUM_RECTANGLES> rectangle_vertices = {
+    std::array<float, Vertex_Data::Rectangle> rectangle_vertices = {
         // positions                // colors           //Textures
          0.5f,  0.5f, 0.0f,         1.0f, 0.0f, 0.0f,   1.0f, 1.0f,  
          0.5f, -0.5f, 0.0f,         0.0f, 1.0f, 0.0f,   1.0f, 0.0f,
@@ -20,7 +20,7 @@ namespace Shapes {
         -0.5f,  0.5f, 0.0f,         0.0f, 1.0f, 0.0f,   0.0f, 1.0f
     };
 
-    std::array<uint32_t, Shape_Indices::Rectangle * Constants::NUM_RECTANGLES> rectangle_indices = {
+    std::array<uint32_t, Shape_Indices::Rectangle> rectangle_indices = {
         0, 1, 3,
         1, 2, 3
     };
@@ -92,7 +92,7 @@ namespace Shapes {
     };
 
     std::array<uint32_t, Shape_Indices::Cube> cube_indices = {
-        0, 1, 3,
+        1, 3, 0,
         1, 2, 3,
 
         4, 6, 5,

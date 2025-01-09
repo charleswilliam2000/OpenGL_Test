@@ -1,12 +1,7 @@
 #ifndef CAMERA_H 
 #define CAMERA_H
 
-#include <GLFW/glfw3.h>
-
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
+#include "stdafx.h"
 
 namespace Default_Camera_Values {
 	constexpr float SPEED = 1.5f;
@@ -40,6 +35,8 @@ private:
 public:
 	Camera() {}
 	Camera(CameraVECs in_CameraVECs);
+
+	glm::vec3 getPosition() const;
 
 	void updateFrame();
 	glm::mat4 updateCameraView() const;

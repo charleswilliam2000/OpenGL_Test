@@ -1,11 +1,7 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
-#include <glad/glad.h>
-#include <iostream>
-
-#include "Constants.h"
-
+#include "stdafx.h"
 #include "stb_image.h"
 
 struct Texture_Configs {

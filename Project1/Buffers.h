@@ -1,12 +1,8 @@
 #ifndef BUFFERS_H
 #define BUFFERS_H
 
-#include <glad/glad.h>
+#include "stdafx.h"
 #include <array> 
-#include <iostream>
-
-#include "Constants.h"
-
 
 struct VertexAttributes {
     GLuint index{};

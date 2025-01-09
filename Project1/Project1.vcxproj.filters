@@ -25,6 +25,9 @@
     <Filter Include="Header Files\Miscs">
       <UniqueIdentifier>{2a6c304a-63bf-4575-a74e-e48324258c1b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Chunk">
+      <UniqueIdentifier>{35908eeb-c08f-47f4-81e5-32b502a16955}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="object_vertex_shader.glsl">
@@ -84,6 +87,9 @@
     <ClCompile Include="Camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="stdafxh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="WindowGUI.h">
@@ -108,6 +114,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Constants.h">
+      <Filter>Header Files\Miscs</Filter>
+    </ClInclude>
+    <ClInclude Include="Chunk.h">
+      <Filter>Header Files\Chunk</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
       <Filter>Header Files\Miscs</Filter>
     </ClInclude>
   </ItemGroup>

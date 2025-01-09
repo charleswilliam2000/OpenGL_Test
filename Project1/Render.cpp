@@ -30,7 +30,7 @@ void Renderer::addLightSourceData(const Drawable& lightSource)
 	_lightSource = lightSource;
 }
 
-void Renderer::render(const glm::mat4& cameraView, bool wireframeMode) const {
+void Renderer::render(const glm::vec3& cameraPos, const glm::mat4& cameraView, bool wireframeMode) const {
 	uint32_t lastTexture		= 0; 
 	glm::mat4 projection		= glm::perspective(glm::radians(45.0f), (float)Constants::WINDOW_WIDTH / (float)Constants::WINDOW_HEIGHT, 0.1f, 100.0f);
 	glm::mat4 lightSourceModel	= glm::translate(glm::mat4(1.0f), _lightSource.coordinate);
@@ -45,6 +45,7 @@ void Renderer::render(const glm::mat4& cameraView, bool wireframeMode) const {
 		Shader_Methods::useShaderProgram(_objectShaders[0]);
 		Shader_Methods::setUniformVec3(_objectShaders[0], "lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
 		Shader_Methods::setUniformVec3(_objectShaders[0], "lightPos", _lightSource.coordinate);
+		Shader_Methods::setUniformVec3(_objectShaders[0], "cameraPos", cameraPos);
 	}
 
 	for (const auto& object : _objectsData) {

@@ -8,6 +8,7 @@ in vec3 Normal;
 
 uniform vec3 lightPos;
 uniform vec3 lightColor;
+uniform vec3 cameraPos;
 
 uniform sampler2D myTextures;
 
@@ -21,7 +22,13 @@ void main() {
 	float difference = max(dot(norm, lightDirection), 0.0);
 	vec3 diffuse = difference * lightColor;
 
-	vec3 result = (ambient + diffuse);
+	//Specular lighting
+	float specularLevel = 0.5;
+	vec3 viewDir = normalize(cameraPos - lightPos);
+	vec3 reflectDir = reflect(-lightDirection, norm);
+	float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
+	vec3 specular = specularLevel * spec * lightColor;
 
+	vec3 result = (ambient + diffuse + specular);
 	fragColors = texture(myTextures, TextureCoords) * vec4(result, 1.0);
 }	

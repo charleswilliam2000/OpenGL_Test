@@ -106,6 +106,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\Users\Huynh Vo Hoang Huan\source\repos\Project1\third_party\GLAD\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -148,17 +149,22 @@
     <ClCompile Include="FileUtils.h" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Shape.cpp" />
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="main.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="stdafxh.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="WindowGUI.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Buffers.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="Chunk.h" />
     <ClInclude Include="Constants.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Shape.h" />
     <ClInclude Include="stb_image.h" />
+    <ClInclude Include="stdafx.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="WindowGUI.h" />
   </ItemGroup>

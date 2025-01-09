@@ -14,6 +14,11 @@ Camera::Camera(CameraVECs in_CameraVECs) : _vectors(in_CameraVECs), _worldUp(in_
 {
     updateCameraVECs();
 }
+
+glm::vec3 Camera::getPosition() const {
+    return _vectors.cameraPos;
+}
+
 void Camera::updateFrame() {
     float currentFrame = static_cast<float>(glfwGetTime());
     _frame.deltaTime = currentFrame - _frame.lastFrame;

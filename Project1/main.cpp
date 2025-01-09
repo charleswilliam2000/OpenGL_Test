@@ -1,4 +1,5 @@
 #define STB_IMAGE_IMPLEMENTATION
+#include "stdafx.h"
 #include "Buffers.h"
 #include "WindowGUI.h"
 
@@ -19,9 +20,10 @@ int main() {
         }
 
         glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
+
         glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
-        glFrontFace(GL_CW);
+        glCullFace(GL_FRONT);
 
         ShaderProgram objectShader("object_vertex_shader.glsl", "object_fragment_shader.glsl");
         ShaderProgram lightShader("light_vertex_shader.glsl", "light_fragment_shader.glsl");
@@ -47,7 +49,7 @@ int main() {
             renderer.addObjectData({ cubes.VAO, texture._textureID, Shape_Indices::Cube, cubeCoordinates[i] });
 
         renderer.addLightSourceShader(lightShader._shaderProgram);
-        renderer.addLightSourceData({ lightSource.VAO, 0, Shape_Indices::Cube, glm::vec3(1.0f, 1.0f, 1.0f) });
+        renderer.addLightSourceData({ lightSource.VAO, 0, Shape_Indices::Cube, glm::vec3(1.0f, 1.0f, 3.0f) });
 
         renderer.addWireframeShader(wireframeShader._shaderProgram);
 
