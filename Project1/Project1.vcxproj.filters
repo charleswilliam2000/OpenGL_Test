@@ -28,6 +28,9 @@
     <Filter Include="Header Files\Chunk">
       <UniqueIdentifier>{35908eeb-c08f-47f4-81e5-32b502a16955}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Chunk">
+      <UniqueIdentifier>{b7bc2a48-d6f3-45a7-8adf-cf4d6e2990e5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="object_vertex_shader.glsl">
@@ -91,6 +94,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Chunk.cpp">
+      <Filter>Source Files\Chunk</Filter>
+    </ClCompile>
+    <ClCompile Include="vectors.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -123,6 +129,9 @@
       <Filter>Header Files\Chunk</Filter>
     </ClInclude>
     <ClInclude Include="stdafx.h">
+      <Filter>Header Files\Miscs</Filter>
+    </ClInclude>
+    <ClInclude Include="vectors.h">
       <Filter>Header Files\Miscs</Filter>
     </ClInclude>
   </ItemGroup>

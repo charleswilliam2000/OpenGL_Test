@@ -1,6 +1,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stdafx.h"
-#include "Buffers.h"
+
+#include "Chunk.h"
 #include "WindowGUI.h"
 
 int main() {
@@ -31,35 +32,44 @@ int main() {
 
         Texture texture("dirt.jpg");
         Shader_Methods::setUniform1i(objectShader._shaderProgram, "myTextures", texture._textureID);
-        
+       
 
-        BufferObjects cubes(Shapes::textured_cube_vertices, Attributes_Details::objectAttributes, Shapes::cube_indices); 
+        const int offset = 8;  // Range from -16.0f to 16.0f
+
+        std::vector<float_VEC> cubeCoordinates; cubeCoordinates.reserve(16 * 16 * 16);
+        for (int x = -offset; x < offset; x++) {
+            for (int y = -offset; y < offset; y++) {
+                for (int z = -offset; z < offset; z++) {
+                    cubeCoordinates.emplace_back(x, y, z);
+                }
+            }
+        }
+        const size_t num_cubes = cubeCoordinates.size();
+        std::vector<BufferObjects> cubes; cubes.reserve(num_cubes);
+        int index = 0;
+
+        Chunk chunk; auto& blocks = *(chunk.blocks);
+        Chunk_Methods::generateChunk(blocks, cubeCoordinates, cubes);
         BufferObjects lightSource(Shapes::base_cube_vertices, Attributes_Details::lightSourceAttributes, Shapes::cube_indices);
 
-        std::vector<glm::vec3> cubeCoordinates = {
-            glm::vec3(0.0f, -1.0f, 0.0f),
-            glm::vec3(1.0f, -1.0f, 0.0f),
-            glm::vec3(-1.0f, -1.0f, 0.0f),
-            glm::vec3(2.0f, -1.0f, 0.0f),
-            glm::vec3(-2.0f, -1.0f, 0.0f)
-        };
         Renderer renderer;
         renderer.addObjectShader(objectShader._shaderProgram);
-        for (int i = 0; i < cubeCoordinates.size(); i++) 
-            renderer.addObjectData({ cubes.VAO, texture._textureID, Shape_Indices::Cube, cubeCoordinates[i] });
+        for (int i = 0; i < num_cubes; i++) {
+            renderer.addObjectData({ cubes[i].VAO, texture._textureID, cubes[i].object_indices, cubeCoordinates[i]});
+        }
 
         renderer.addLightSourceShader(lightShader._shaderProgram);
-        renderer.addLightSourceData({ lightSource.VAO, 0, Shape_Indices::Cube, glm::vec3(1.0f, 1.0f, 3.0f) });
-
+        renderer.addLightSourceData({ lightSource.VAO, 0, Shape_Indices::Cube, {33.0f, 33.0f, 33.0f} });
         renderer.addWireframeShader(wireframeShader._shaderProgram);
 
         screen.associateRenderer(renderer);
 
-        Camera camera({ glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f) });
+        Camera camera({ glm::vec3(17.0f, 17.0f, 17.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f) });
         screen.insertCamera(camera);
         screen.run();
 
         renderer.terminateShaderPrograms();
+        
     }
     catch (const std::runtime_error& e) { std::cout << e.what(); }
     glfwTerminate();

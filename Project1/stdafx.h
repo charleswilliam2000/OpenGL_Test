@@ -14,5 +14,6 @@
 
 //My libraries
 #include "Constants.h"
+#include "vectors.h"
 
 #endif // STDAFX_H

@@ -3,6 +3,7 @@
 
 #include "stdafx.h"
 #include <array> 
+#include <vector>
 
 struct VertexAttributes {
     GLuint index{};
@@ -20,9 +21,37 @@ namespace Attributes_Details {
 }
 
 
+
 struct BufferObjects {
 public:
-    GLuint VAO, VBO, EBO = 0;
+    GLuint VAO = 0, VBO = 0, EBO = 0;
+    uint32_t object_indices = 0;
+
+    BufferObjects() {}
+
+    template <size_t arr1_size>
+    BufferObjects(
+        const std::array<VertexAttributes, arr1_size>& attributes,
+        const std::vector<uint32_t>& indices,
+        GLuint sharedVBO = 0) : object_indices(static_cast<int>(indices.size())) {
+        glGenVertexArrays(1, &VAO);
+        glGenBuffers(1, &EBO);
+
+        glBindVertexArray(VAO);
+
+        glBindBuffer(GL_ARRAY_BUFFER, sharedVBO);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32_t), indices.data(), GL_STATIC_DRAW);
+        
+
+        for (const auto& attr : attributes) {
+            glVertexAttribPointer(attr.index, attr.componentCount, attr.type, attr.normalized, attr.stride, attr.offset);
+            glEnableVertexAttribArray(attr.index);
+        }
+        glBindVertexArray(0);
+    }
+
     template <size_t arr1_size, size_t arr2_size, size_t arr3_size>
     BufferObjects(
         const std::array<float, arr1_size>& vertexData,
@@ -39,7 +68,7 @@ public:
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32_t), indices.data(), GL_STATIC_DRAW);
-        
+
 
         for (const auto& attr : attributes) {
             glVertexAttribPointer(attr.index, attr.componentCount, attr.type, attr.normalized, attr.stride, attr.offset);
@@ -49,9 +78,9 @@ public:
     }
 
     ~BufferObjects() {
-        glDeleteBuffers(1, &VBO);
+        if (VAO) glDeleteVertexArrays(1, &VAO);
+        if (VBO) glDeleteBuffers(1, &VBO);
         if (EBO) glDeleteBuffers(1, &EBO);
-        glDeleteVertexArrays(1, &VAO);
     }
 };
 

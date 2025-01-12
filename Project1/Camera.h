@@ -4,7 +4,7 @@
 #include "stdafx.h"
 
 namespace Default_Camera_Values {
-	constexpr float SPEED = 1.5f;
+	constexpr float SPEED = 2.5f;
 	constexpr float SENSITIVITY = 0.05f;
 	//float ZOOM = 45.0f;
 }

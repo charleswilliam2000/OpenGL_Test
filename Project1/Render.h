@@ -13,10 +13,10 @@ struct Drawable {
 	uint32_t VAO{};
 	uint32_t texture{};
 	uint32_t indices{};
-	glm::vec3 coordinate{};
+	float_VEC coordinate{};
 
 	Drawable() {};
-	Drawable(uint32_t VAO, uint32_t texture, uint32_t indices, glm::vec3 coordinate) : VAO(VAO), texture(texture), indices(indices), coordinate(coordinate) {}
+	Drawable(uint32_t VAO, uint32_t texture, uint32_t indices, float_VEC coordinate) : VAO(VAO), texture(texture), indices(indices), coordinate(coordinate) {}
 
 };
 
