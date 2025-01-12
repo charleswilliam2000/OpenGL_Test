@@ -50,6 +50,11 @@ Screen::Screen(int width, int height, const char* title, GLFWmonitor* monitor, G
 }
 
 void Screen::run() const {
+
+    if (!_window) 
+        throw std::runtime_error("\nWindow not intialized!");
+    
+
     while (!glfwWindowShouldClose(_window)) {
         camera->updateFrame();
         camera->handleCameraMovement(_window);

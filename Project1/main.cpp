@@ -33,37 +33,34 @@ int main() {
         Texture texture("dirt.jpg");
         Shader_Methods::setUniform1i(objectShader._shaderProgram, "myTextures", texture._textureID);
        
+        constexpr int offset = 3;  // Range from -16.0f to 16.0
+        constexpr size_t num_cubes = 27;
 
-        const int offset = 8;  // Range from -16.0f to 16.0f
-
-        std::vector<float_VEC> cubeCoordinates; cubeCoordinates.reserve(16 * 16 * 16);
+        std::vector<float_VEC> cubeCoordinates; cubeCoordinates.resize(num_cubes);
+        
+        size_t index = 0;
         for (int x = -offset; x < offset; x++) {
             for (int y = -offset; y < offset; y++) {
                 for (int z = -offset; z < offset; z++) {
-                    cubeCoordinates.emplace_back(x, y, z);
+                    cubeCoordinates[index++] = float_VEC(x, y, z);
                 }
             }
         }
-        const size_t num_cubes = cubeCoordinates.size();
-        std::vector<BufferObjects> cubes; cubes.reserve(num_cubes);
-        int index = 0;
-
-        Chunk chunk; auto& blocks = *(chunk.blocks);
-        Chunk_Methods::generateChunk(blocks, cubeCoordinates, cubes);
+        
+        Chunk chunk(cubeCoordinates);
         BufferObjects lightSource(Shapes::base_cube_vertices, Attributes_Details::lightSourceAttributes, Shapes::cube_indices);
 
         Renderer renderer;
         renderer.addObjectShader(objectShader._shaderProgram);
-        for (int i = 0; i < num_cubes; i++) {
-            renderer.addObjectData({ cubes[i].VAO, texture._textureID, cubes[i].object_indices, cubeCoordinates[i]});
-        }
+        renderer.addObjectData({ chunk.chunkData.VAO, texture._textureID, chunk.chunkData.object_indices, {0.0f, 0.0f, 0.0f} });
+        
 
         renderer.addLightSourceShader(lightShader._shaderProgram);
-        renderer.addLightSourceData({ lightSource.VAO, 0, Shape_Indices::Cube, {33.0f, 33.0f, 33.0f} });
+        renderer.addLightSourceData({ lightSource.VAO, 0, Shape_Indices::Cube, {17.0f, 17.0f, 17.0f} });
         renderer.addWireframeShader(wireframeShader._shaderProgram);
 
         screen.associateRenderer(renderer);
-
+                            //Pos                           //Front                     //Up
         Camera camera({ glm::vec3(17.0f, 17.0f, 17.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f) });
         screen.insertCamera(camera);
         screen.run();

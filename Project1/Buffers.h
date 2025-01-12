@@ -20,8 +20,6 @@ namespace Attributes_Details {
     extern std::array<VertexAttributes, 1> lightSourceAttributes;
 }
 
-
-
 struct BufferObjects {
 public:
     GLuint VAO = 0, VBO = 0, EBO = 0;
@@ -29,28 +27,13 @@ public:
 
     BufferObjects() {}
 
-    template <size_t arr1_size>
-    BufferObjects(
-        const std::array<VertexAttributes, arr1_size>& attributes,
-        const std::vector<uint32_t>& indices,
-        GLuint sharedVBO = 0) : object_indices(static_cast<int>(indices.size())) {
-        glGenVertexArrays(1, &VAO);
-        glGenBuffers(1, &EBO);
+    BufferObjects(const std::vector<float>& vertex, const std::array<VertexAttributes, Attributes_Details::num_objectAttributes>& attributes, const std::vector<uint32_t>& indices);
 
-        glBindVertexArray(VAO);
-
-        glBindBuffer(GL_ARRAY_BUFFER, sharedVBO);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32_t), indices.data(), GL_STATIC_DRAW);
-        
-
-        for (const auto& attr : attributes) {
-            glVertexAttribPointer(attr.index, attr.componentCount, attr.type, attr.normalized, attr.stride, attr.offset);
-            glEnableVertexAttribArray(attr.index);
-        }
-        glBindVertexArray(0);
+    BufferObjects(BufferObjects&& other) noexcept
+        : VAO(other.VAO), VBO(other.VBO), EBO(other.EBO), object_indices(other.object_indices) {
+        other.VAO = other.VBO = other.EBO = 0; 
     }
+
 
     template <size_t arr1_size, size_t arr2_size, size_t arr3_size>
     BufferObjects(
@@ -75,6 +58,24 @@ public:
             glEnableVertexAttribArray(attr.index);
         }
         glBindVertexArray(0);
+    }
+
+    BufferObjects& operator=(BufferObjects&& other) noexcept {
+        if (this != &other) {
+            // Cleanup existing resources
+            glDeleteVertexArrays(1, &VAO);
+            glDeleteBuffers(1, &VBO);
+            glDeleteBuffers(1, &EBO);
+
+            // Move new resources
+            VAO = other.VAO;
+            VBO = other.VBO;
+            EBO = other.EBO;
+            object_indices = other.object_indices;
+
+            other.VAO = other.VBO = other.EBO = 0; // Nullify moved resources
+        }
+        return *this;
     }
 
     ~BufferObjects() {

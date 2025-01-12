@@ -18,11 +18,11 @@ uint32_VEC uint32_VEC::getAdjacentCoordinate(const Faces& face) const
 {
 	switch (face) {
 	case Faces::NORTH:		return (z > 0)	? uint32_VEC{ x, y, z - 1 } : *this;
-	case Faces::SOUTH:		return (z < 31) ? uint32_VEC{ x, y, z + 1 } : *this;
+	case Faces::SOUTH:		return (z < 15) ? uint32_VEC{ x, y, z + 1 } : *this;
 	case Faces::WEST:		return (x > 0)	? uint32_VEC{ x - 1, y, z } : *this;
-	case Faces::EAST:		return (x < 31)	? uint32_VEC{ x + 1, y, z } : *this;
+	case Faces::EAST:		return (x < 15)	? uint32_VEC{ x + 1, y, z } : *this;
 	case Faces::BOTTOM:		return (y > 0)	? uint32_VEC{ x, y - 1, z } : *this;
-	case Faces::TOP:		return (y < 31)	? uint32_VEC{ x, y + 1, z } : *this;
+	case Faces::TOP:		return (y < 15)	? uint32_VEC{ x, y + 1, z } : *this;
 	}
 	std::cerr << "\nUnable to determine face!";
 	throw std::runtime_error("\nFace not recognized!");
