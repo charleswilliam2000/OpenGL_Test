@@ -13,18 +13,22 @@ namespace Chunk_Constants {
     constexpr size_t Dimension_Size = 16;
 }
 
-struct Block {
-	uint32_t x : 16;
-	uint32_t visibility_mask : 6;
-	uint32_t padding : 10;
-
-	inline void setX(uint32_t in_x) { x |= (1 << in_x); }
-	inline bool getX(uint32_t in_x) const { return (x & (1 << in_x)) != 0; }
+struct Block_Attribute {
+	uint8_t visibility_mask : 6;  // 6 bits for visibility (1 per face)
+	uint8_t padding : 2;
 
 	inline void setFaceVisible(Faces face) { visibility_mask |= (1 << static_cast<int>(face)); }
 	inline void setFaceHidden(Faces face) { visibility_mask &= ~(1 << static_cast<int>(face)); }
 	inline bool isFaceVisible(Faces face) const { return (visibility_mask & (1 << static_cast<int>(face))) != 0; }
 	inline bool isHidden() const { return visibility_mask == 0; }
+};
+
+struct Block {
+	uint16_t x : 16;
+	Block_Attribute attribute[16];
+
+	inline void setX(uint16_t in_x) { x |= (1 << in_x); }
+	inline bool getX(uint16_t in_x) const { return (x & (1 << in_x)) != 0; }
 
 };
 
@@ -40,12 +44,11 @@ struct Chunk {
 	using Blocks = std::array<std::array<Block, Chunk_Constants::Dimension_Size>, Chunk_Constants::Dimension_Size>;
 private:
 	bool checkValidBlock(const float_VEC& block_coordinate);
+	void updateVisibilityMask(Block& currBlock, const uint32_VEC& blockCoord);
 	void insertBlocks(const std::vector<float_VEC>& block_coordinates);
 
-	void updateVisibilityMask(const std::vector<float_VEC>& block_coordinates);
-
-	void generateVertexArray(const Block& block, const uint32_VEC& blockCoordinate, std::vector<float>& block_vertices) const;
-	void generateIndexArray(const Block& block, std::vector<uint32_t>& indices, uint64_t vertexOffset) const;
+	void generateVertexArray(const Block& block, const uint32_VEC& blockCoordinate, std::vector<float>& block_vertices, int face) const;
+	void generateIndexArray(const Block& block, const uint32_VEC& blockCoordinat, std::vector<uint32_t>& indices, int face, uint64_t vertexOffset) const;
 	void generateChunk(const std::vector<float_VEC>& block_coordinates, std::vector<uint32_t>& chunk_indices, std::vector<float>& chunk_vertex);
 public:
 

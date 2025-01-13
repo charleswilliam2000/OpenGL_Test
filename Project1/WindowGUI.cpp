@@ -51,8 +51,14 @@ Screen::Screen(int width, int height, const char* title, GLFWmonitor* monitor, G
 
 void Screen::run() const {
 
-    if (!_window) 
-        throw std::runtime_error("\nWindow not intialized!");
+    if (!_window)
+        throw std::runtime_error("Window not initialized!");
+
+    if (!camera)
+        throw std::runtime_error("Camera not initialized!");
+
+    if (!renderer)
+        throw std::runtime_error("Renderer not initialized!");
     
 
     while (!glfwWindowShouldClose(_window)) {
@@ -70,6 +76,9 @@ void Screen::run() const {
         glfwSwapBuffers(_window);
         glfwPollEvents();
     }
+    if (!_window)
+        throw std::runtime_error("Window is null during destruction.");
+
     glfwDestroyWindow(_window);
 }
 

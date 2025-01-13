@@ -21,8 +21,6 @@ int main() {
         }
 
         glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_LESS);
-
         glEnable(GL_CULL_FACE);
         glCullFace(GL_FRONT);
 
@@ -33,19 +31,20 @@ int main() {
         Texture texture("dirt.jpg");
         Shader_Methods::setUniform1i(objectShader._shaderProgram, "myTextures", texture._textureID);
        
-        constexpr int offset = 3;  // Range from -16.0f to 16.0
-        constexpr size_t num_cubes = 27;
+        constexpr int offset = 8; 
+        std::vector<float_VEC> cubeCoordinates;
+        //cubeCoordinates.emplace_back(1.0f, 1.0f, 1.0f);
+        //cubeCoordinates.emplace_back(2.0f, 1.0f, 1.0f);
 
-        std::vector<float_VEC> cubeCoordinates; cubeCoordinates.resize(num_cubes);
-        
-        size_t index = 0;
+
         for (int x = -offset; x < offset; x++) {
             for (int y = -offset; y < offset; y++) {
                 for (int z = -offset; z < offset; z++) {
-                    cubeCoordinates[index++] = float_VEC(x, y, z);
+                    cubeCoordinates.emplace_back(x, y, z);
                 }
             }
         }
+
         
         Chunk chunk(cubeCoordinates);
         BufferObjects lightSource(Shapes::base_cube_vertices, Attributes_Details::lightSourceAttributes, Shapes::cube_indices);
