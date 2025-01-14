@@ -7,7 +7,7 @@
 
 #include <array>
 #include <vector>
-#include <memory>
+#include <future>
 
 namespace Chunk_Constants {
     constexpr size_t Dimension_Size = 16;
@@ -43,19 +43,46 @@ inline uint32_VEC worldToBlock(float x, float y, float z) {
 struct Chunk {
 	using Blocks = std::array<std::array<Block, Chunk_Constants::Dimension_Size>, Chunk_Constants::Dimension_Size>;
 private:
-	bool checkValidBlock(const float_VEC& block_coordinate);
-	void updateVisibilityMask(Block& currBlock, const uint32_VEC& blockCoord);
-	void insertBlocks(const std::vector<float_VEC>& block_coordinates);
+	bool checkValidBlock(const uint8_VEC& block_coordinate);
+	void updateVisibilityMask(Block& currBlock, const uint8_VEC& blockCoord);
+	void insertBlocks(const std::vector<uint8_VEC>& block_coordinates, std::vector<uint8_VEC>& visibleBlocks);
 
-	void generateVertexArray(const Block& block, const uint32_VEC& blockCoordinate, std::vector<float>& block_vertices, int face) const;
-	void generateIndexArray(const Block& block, const uint32_VEC& blockCoordinat, std::vector<uint32_t>& indices, int face, uint64_t vertexOffset) const;
-	void generateChunk(const std::vector<float_VEC>& block_coordinates, std::vector<uint32_t>& chunk_indices, std::vector<float>& chunk_vertex);
+	void generateVertexArray(const Block& block, const uint8_VEC& blockCoordinate, std::array<float, 32>& face_vertex, int face) const {
+		size_t arr_index = 0;
+		for (int vertex = 0; vertex < 4; vertex++) {
+			int index = face * 32 + vertex * 8;
+
+			//Positions
+			face_vertex[arr_index++] = Shapes::textured_cube_vertices[index] + blockCoordinate.x;
+			face_vertex[arr_index++] = Shapes::textured_cube_vertices[index + 1] + blockCoordinate.y;
+			face_vertex[arr_index++] = Shapes::textured_cube_vertices[index + 2] + blockCoordinate.z;
+			index += 3;
+
+			//Normals
+			face_vertex[arr_index++] = Shapes::textured_cube_vertices[index];
+			face_vertex[arr_index++] = Shapes::textured_cube_vertices[index + 1];
+			face_vertex[arr_index++] = Shapes::textured_cube_vertices[index + 2];
+			index += 3;
+
+			//UV
+			face_vertex[arr_index++] = Shapes::textured_cube_vertices[index];
+			face_vertex[arr_index++] = Shapes::textured_cube_vertices[index + 1];
+		}
+	}
+	void generateIndexArray(const Block& block, std::array<uint32_t, 6>& block_indices, int face, uint64_t vertexOffset) const {
+		for (int i = 0; i < 6; i++) {
+			int faceOffset = face * 6 + i;
+			uint32_t currIndex = static_cast<uint32_t>(Shapes::cube_indices[faceOffset] + vertexOffset);
+			block_indices[i] = currIndex;
+		}
+	}
+	void generateChunk(const std::vector<uint8_VEC>& block_coordinates, std::vector<uint32_t>& chunk_indices, std::vector<float>& chunk_vertex);
 public:
 
 	Blocks blocks{};
 	BufferObjects chunkData{};
 
-	Chunk(const std::vector<float_VEC>& cubeCoordinates);
+	Chunk(const std::vector<uint8_VEC>& cubeCoordinates);
 };
 
 namespace Chunk_Methods {

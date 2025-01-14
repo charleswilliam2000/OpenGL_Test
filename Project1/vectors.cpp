@@ -43,3 +43,17 @@ float_VEC float_VEC::getAdjacentCoordinate(const Faces& face) const
 	std::cerr << "\nUnable to determine face!";
 	throw std::runtime_error("\nFace not recognized!");
 }
+
+uint8_VEC uint8_VEC::getAdjacentCoordinate(const Faces& face) const
+{
+	switch (face) {
+	case Faces::NORTH:		return (z > 0) ?	uint8_VEC{ x, y, z - 1 } : *this;
+	case Faces::SOUTH:		return (z < 15) ?	uint8_VEC{ x, y, z + 1 } : *this;
+	case Faces::WEST:		return (x > 0) ?	uint8_VEC{ x - 1, y, z } : *this;
+	case Faces::EAST:		return (x < 15) ?	uint8_VEC{ x + 1, y, z } : *this;
+	case Faces::BOTTOM:		return (y > 0) ?	uint8_VEC{ x, y - 1, z } : *this;
+	case Faces::TOP:		return (y < 15) ?	uint8_VEC{ x, y + 1, z } : *this;
+	}
+	std::cerr << "\nUnable to determine face!";
+	throw std::runtime_error("\nFace not recognized!");
+}

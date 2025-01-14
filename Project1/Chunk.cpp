@@ -1,13 +1,13 @@
 #include "Chunk.h"
 
-bool Chunk::checkValidBlock(const float_VEC& block_coordinate) {
-	if (block_coordinate.x < -16.0f || block_coordinate.y < -16.0f || block_coordinate.z < -16.0f) {
+bool Chunk::checkValidBlock(const uint8_VEC& block_coordinate) {
+	if (block_coordinate.x < 0 || block_coordinate.y < 0 || block_coordinate.z < 0) {
 		std::cerr << "\nOne coordinate is smaller than 0! Coordinates: "
 			<< block_coordinate.x << " - " << block_coordinate.y << " - " << block_coordinate.z;
 		throw std::runtime_error("\nOne coordinate is smaller than 0!");
 	}
 
-	if (block_coordinate.x >= 16.0f || block_coordinate.y >= 16.0f || block_coordinate.z >= 16.0f) {
+	if (block_coordinate.x >= 16 || block_coordinate.y >= 16 || block_coordinate.z >= 16) {
 		std::cerr << "\nOne coordinate is larger than 32! Coordinates: "
 			<< block_coordinate.x << " - " << block_coordinate.y << " - " << block_coordinate.z;
 		throw std::runtime_error("\nOne coordinate is larger than 32!");
@@ -15,102 +15,105 @@ bool Chunk::checkValidBlock(const float_VEC& block_coordinate) {
 	return true;
 }
 
-void Chunk::insertBlocks(const std::vector<float_VEC>& block_coordinates) {
-	for (const auto& block_coordinate : block_coordinates) {
-		checkValidBlock(block_coordinate);
-		const uint32_VEC& blockCoord = worldToBlock(block_coordinate.x, block_coordinate.y, block_coordinate.z);
-
+void Chunk::insertBlocks(const std::vector<uint8_VEC>& block_coordinates, std::vector<uint8_VEC>& visibleBlocks) {
+	for (const auto& blockCoord : block_coordinates) {
+		checkValidBlock(blockCoord);
 		Block& currentBlock = blocks[blockCoord.y][blockCoord.z];
 		currentBlock.setX(blockCoord.x);
 		updateVisibilityMask(currentBlock, blockCoord);
 	}
+
+	for (const auto& blockCoord : block_coordinates) {
+		Block& currentBlock = blocks[blockCoord.y][blockCoord.z];
+		if (!currentBlock.attribute[blockCoord.x].isHidden()) {
+			visibleBlocks.emplace_back(blockCoord.x, blockCoord.y, blockCoord.z);
+		}
+	}
 }
 
-void Chunk::updateVisibilityMask(Block& currBlock, const uint32_VEC& blockCoord) {
+void Chunk::updateVisibilityMask(Block& currBlock, const uint8_VEC& blockCoord) {
 	for (int face = 0; face < 6; face++) {
 		Faces currFace = static_cast<Faces>(face);
-		uint32_VEC adjacentCoord = blockCoord.getAdjacentCoordinate(currFace);
-		if (adjacentCoord == blockCoord) {
-			currBlock.attribute[adjacentCoord.x].setFaceVisible(currFace);
-			continue;
-		}
-
-		Block& adjacentBlock = blocks[adjacentCoord.y][adjacentCoord.z];
-		if (adjacentBlock.getX(adjacentCoord.x)) {
-			currBlock.attribute[blockCoord.x].setFaceHidden(currFace);
-			(face % 2 == 0) 
-				? adjacentBlock.attribute[adjacentCoord.x].setFaceHidden(static_cast<Faces>(face + 1)) 
-				: adjacentBlock.attribute[adjacentCoord.x].setFaceHidden(static_cast<Faces>(face - 1));
-		}
-		else currBlock.attribute[blockCoord.x].setFaceVisible(currFace);
-	}
-}
-
-void Chunk::generateVertexArray(const Block& block, const uint32_VEC& blockCoordinate, std::vector<float>& block_vertices, int face) const {
-	for (int vertex = 0; vertex < 4; vertex++) {
-		int index = face * 32 + vertex * 8;
-
-		block_vertices.push_back(Shapes::textured_cube_vertices[static_cast<std::array<float, 192Ui64>::size_type>(index)] + blockCoordinate.x);
-		block_vertices.push_back(Shapes::textured_cube_vertices[static_cast<std::array<float, 192Ui64>::size_type>(index) + 1] + blockCoordinate.y);
-		block_vertices.push_back(Shapes::textured_cube_vertices[static_cast<std::array<float, 192Ui64>::size_type>(index) + 2] + blockCoordinate.z);
-		index += 3;
-
-		for (int normals = 0; normals < 3; normals++) {
-			int normalsOffset = index + normals;
-			block_vertices.push_back(Shapes::textured_cube_vertices[normalsOffset]);
-		} index += 3;
-
-		for (int uv = 0; uv < 2; uv++) {
-			int uvOffset = index + uv;
-			block_vertices.push_back(Shapes::textured_cube_vertices[uvOffset]);
+		uint8_VEC adjacentCoord = blockCoord.getAdjacentCoordinate(currFace);
+		if (adjacentCoord == blockCoord) currBlock.attribute[adjacentCoord.x].setFaceVisible(currFace);
+		else {
+			Block& adjacentBlock = blocks[adjacentCoord.y][adjacentCoord.z];
+			if (adjacentBlock.getX(adjacentCoord.x)) {
+				currBlock.attribute[blockCoord.x].setFaceHidden(currFace);
+				(face % 2 == 0)
+					? adjacentBlock.attribute[adjacentCoord.x].setFaceHidden(static_cast<Faces>(face + 1))
+					: adjacentBlock.attribute[adjacentCoord.x].setFaceHidden(static_cast<Faces>(face - 1));
+			}
+			else currBlock.attribute[blockCoord.x].setFaceVisible(currFace);
 		}
 	}
 }
-
-void Chunk::generateIndexArray(const Block& block, const uint32_VEC& blockCoordinate, std::vector<uint32_t>& block_indices, int face, uint64_t vertexOffset) const {
-	for (int i = 0; i < 6; i++) {
-		int faceOffset = face * 6 + i;
-		uint32_t currIndex = static_cast<uint32_t>(Shapes::cube_indices[faceOffset] + vertexOffset);
-		block_indices.push_back(currIndex);
-	}
-}
-
-void Chunk::generateChunk(const std::vector<float_VEC>& block_coordinates, std::vector<uint32_t>& chunk_indices, std::vector<float>& chunk_vertex) {
-	insertBlocks(block_coordinates);
-
-	std::vector<uint32_t> face_indices{};
-	std::vector<float> face_vertex{};
-
+void Chunk::generateChunk(const std::vector<uint8_VEC>& block_coordinates, std::vector<uint32_t>& chunk_indices, std::vector<float>& chunk_vertex) {
+	std::vector<uint8_VEC> visibleBlocks{}; visibleBlocks.reserve(Constants::MAX_VISIBLE_BLOCKS);
+	insertBlocks(block_coordinates, visibleBlocks);
+		
 	uint64_t vertexOffset = 0;
-	uint32_t vertexStride = 8;
+	size_t numThreads = std::thread::hardware_concurrency();
+	size_t blocksPerThread = visibleBlocks.size() / numThreads;
 
-	for (const auto& block_coordinate : block_coordinates) {
-		const uint32_VEC& blockCoord = worldToBlock(block_coordinate.x, block_coordinate.y, block_coordinate.z);
-		const Block& currBlock = blocks[blockCoord.y][blockCoord.z];
+	std::vector<std::future<std::pair<std::vector<float>, std::vector<uint32_t>>>> futures;
+	
+	for(size_t t = 0; t < numThreads; t++) {
+		size_t start = t * blocksPerThread;
+		size_t end = (t == numThreads - 1) ? visibleBlocks.size() : start + blocksPerThread;
 
-		if (!currBlock.attribute[blockCoord.x].isHidden()) {
-			for (int face = 0; face < 6; face++) {
-				face_indices.clear(); face_vertex.clear();
-				generateVertexArray(currBlock, blockCoord, face_vertex, face);
+		uint64_t threadVertexOffset = vertexOffset;
+		vertexOffset += (end - start) * 24;
+		futures.emplace_back(std::async(std::launch::async, [&, start, end, threadVertexOffset]() {
+			std::vector<float> local_vertex; local_vertex.reserve((end - start) * 32 * sizeof(float));
+			std::vector<uint32_t> local_indices; local_indices.reserve((end - start) * 6 * sizeof(uint32_t));
 
-				if (currBlock.attribute[blockCoord.x].isFaceVisible(static_cast<Faces>(face))) {
-					generateIndexArray(currBlock, blockCoord, face_indices, face, vertexOffset);
+			uint64_t localOffset = threadVertexOffset;
+
+			for (size_t i = start; i < end; i++) {
+				const uint8_VEC& blockCoord = visibleBlocks[i];
+				const Block& currBlock = blocks[blockCoord.y][blockCoord.z];
+
+				for (int face = 0; face < 6; face++) {
+					std::array<uint32_t, 6> face_indices{};
+					std::array<float, 32> face_vertex{};
+
+					generateVertexArray(currBlock, blockCoord, face_vertex, face);
+					if (currBlock.attribute[blockCoord.x].isFaceVisible(static_cast<Faces>(face))) {
+						generateIndexArray(currBlock, face_indices, face, localOffset);
+					}
+					local_vertex.insert(local_vertex.end(), face_vertex.begin(), face_vertex.end());
+					local_indices.insert(local_indices.end(), face_indices.begin(), face_indices.end());
 				}
 
-				chunk_vertex.insert(chunk_vertex.end(), face_vertex.begin(), face_vertex.end());
-				chunk_indices.insert(chunk_indices.end(), face_indices.begin(), face_indices.end());
+				localOffset += 24; // Increment for the next block
 			}
-			vertexOffset += 24;
-		}
+
+			return std::make_pair(local_vertex, local_indices);
+		}));
+	}
+
+	for (auto& future : futures) {
+		auto it = future.get();
+		chunk_vertex.insert(chunk_vertex.end(), it.first.begin(), it.first.end());
+		chunk_indices.insert(chunk_indices.end(), it.second.begin(), it.second.end());
 	}
 }
 
-Chunk::Chunk(const std::vector<float_VEC>& cubeCoordinates)  {
-    std::vector<uint32_t> chunk_indices{}; 
-    std::vector<float> chunk_vertex{};
-    generateChunk(cubeCoordinates, chunk_indices, chunk_vertex);
 
-    chunkData = BufferObjects(chunk_vertex, Attributes_Details::objectAttributes, chunk_indices);
+Chunk::Chunk(const std::vector<uint8_VEC>& cubeCoordinates)  {
+	for (int i = 0; i < 10; i++) {
+		auto start = std::chrono::high_resolution_clock::now();
+
+		std::vector<uint32_t> chunk_indices{}; chunk_indices.reserve(Constants::MAX_VISIBLE_BLOCKS * 6 * 6);
+		std::vector<float> chunk_vertex{}; chunk_vertex.reserve(Constants::MAX_VISIBLE_BLOCKS * 6 * 32);
+		generateChunk(cubeCoordinates, chunk_indices, chunk_vertex);
+		chunkData = BufferObjects(chunk_vertex, Attributes_Details::objectAttributes, chunk_indices);
+
+		auto end = std::chrono::high_resolution_clock::now();
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+		std::cout << "chunk generation time: " << duration << " milliseconds.\n";
+	}
 }
 
 namespace Chunk_Methods {

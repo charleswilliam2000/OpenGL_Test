@@ -1,6 +1,5 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stdafx.h"
-
 #include "Chunk.h"
 #include "WindowGUI.h"
 
@@ -31,22 +30,18 @@ int main() {
         Texture texture("dirt.jpg");
         Shader_Methods::setUniform1i(objectShader._shaderProgram, "myTextures", texture._textureID);
        
-        constexpr int offset = 8; 
-        std::vector<float_VEC> cubeCoordinates;
-        //cubeCoordinates.emplace_back(1.0f, 1.0f, 1.0f);
-        //cubeCoordinates.emplace_back(2.0f, 1.0f, 1.0f);
+        constexpr int offset = 16;
 
+        std::vector<uint8_VEC> block_coordinates; block_coordinates.reserve(offset * offset * offset);
 
-        for (int x = -offset; x < offset; x++) {
-            for (int y = -offset; y < offset; y++) {
-                for (int z = -offset; z < offset; z++) {
-                    cubeCoordinates.emplace_back(x, y, z);
+        for (int x = 0; x < offset; x++) {
+            for (int y = 0; y < offset; y++) {
+                for (int z = 0; z < offset; z++) {
+                    block_coordinates.emplace_back(x, y, z);
                 }
             }
         }
-
-        
-        Chunk chunk(cubeCoordinates);
+        Chunk chunk(block_coordinates);
         BufferObjects lightSource(Shapes::base_cube_vertices, Attributes_Details::lightSourceAttributes, Shapes::cube_indices);
 
         Renderer renderer;
