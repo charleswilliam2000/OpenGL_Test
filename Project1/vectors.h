@@ -16,8 +16,10 @@ enum class Faces : uint8_t {
 struct uint8_VEC {
 	uint8_t x = 0, y = 0, z = 0;
 	uint8_VEC() {}
+	constexpr uint8_VEC() {}
+	constexpr uint8_VEC(uint8_t x, uint8_t y, uint8_t z) : x(x), y(y), z(z) {}
 	template<typename _type1, typename _type2, typename _type3>
-	uint8_VEC(_type1 x, _type2 y, _type3 z) : x(static_cast<uint8_t>(x)), y(static_cast<uint8_t>(y)), z(static_cast<uint8_t>(z)) {};
+	constexpr uint8_VEC(_type1 x, _type2 y, _type3 z) : x(static_cast<uint8_t>(x)), y(static_cast<uint8_t>(y)), z(static_cast<uint8_t>(z)) {};
 	uint8_VEC getAdjacentCoordinate(const Faces& face) const;
 
 	bool operator==(const uint8_VEC& other) {

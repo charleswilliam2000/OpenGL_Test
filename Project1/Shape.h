@@ -2,6 +2,7 @@
 #define SHAPE_H
 
 #include <array>
+#include <vector>
 
 namespace Vertex_Data {
     constexpr unsigned char Triangle = 24;

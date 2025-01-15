@@ -7,11 +7,61 @@
 
 #include <array>
 #include <vector>
-#include <future>
 
 namespace Chunk_Constants {
     constexpr size_t Dimension_Size = 16;
 }
+
+struct Vertex {
+	uint8_VEC coordinates = { 0, 0, 0 };
+	uint8_t vertex_data = 0; // 4 for normals, and 2 for uv. The rest is unusued bits
+
+	Vertex() {}
+	Vertex(uint8_VEC coordinates, uint8_t vertex_data) : coordinates(coordinates), vertex_data(vertex_data) {}
+};
+
+struct Face_Data {
+	uint8_VEC offsets[4];
+	uint8_t vertex_data[4];
+	uint32_t indices[6];
+};
+
+constexpr std::array<Face_Data, 6> FACE_DATA = {
+	{
+		// WEST
+		{{uint8_VEC{0, 0, 0}, uint8_VEC{0, 1, 0}, uint8_VEC{0, 1, 1}, uint8_VEC{0, 0, 1}},
+		 {0b00101100, 0b00111100, 0b00011100, 0b00001100},
+		 {0, 2, 1, 0, 3, 2}},
+		 // BOTTOM
+		{{uint8_VEC{0, 0, 0}, uint8_VEC{1, 0, 0}, uint8_VEC{1, 0, 1}, uint8_VEC{0, 0, 1}},
+		{0b00011010, 0b00111010, 0b00101010, 0b00001010},
+		{0, 2, 1, 0, 3, 2}},
+		// NORTH
+		{{uint8_VEC{0, 0, 0}, uint8_VEC{1, 0, 0}, uint8_VEC{1, 1, 0}, uint8_VEC{0, 1, 0}},
+		{0b00001001, 0b00101001, 0b00111001, 0b00011001},
+		{0, 2, 1, 0, 3, 2}},
+		// EAST
+		{{uint8_VEC{1, 0, 0}, uint8_VEC{1, 1, 0}, uint8_VEC{1, 1, 1}, uint8_VEC{1, 0, 1}},
+		{0b00100100, 0b00110100, 0b00010100, 0b00000100},
+		{0, 2, 1, 0, 3, 2}},
+		// TOP
+		{{uint8_VEC{0, 1, 0}, uint8_VEC{1, 1, 0}, uint8_VEC{1, 1, 1}, uint8_VEC{0, 1, 1}},
+		{0b00010010, 0b00110010, 0b00100010, 0b00000010},
+		{0, 2, 1, 0, 3, 2}},
+		// SOUTH
+		{{uint8_VEC{0, 0, 1}, uint8_VEC{1, 0, 1}, uint8_VEC{1, 1, 1}, uint8_VEC{0, 1, 1}},
+		{0b00000001, 0b00100001, 0b00110001, 0b00010001},
+		{0, 2, 1, 0, 3, 2}},
+	}
+};
+
+struct Chunk_Data {
+	using Vertices = std::vector<Vertex>;
+	Vertices chunk_vertices;
+
+	using Indices = std::vector<uint32_t>;
+	Indices chunk_indices;
+};
 
 struct Block_Attribute {
 	uint8_t visibility_mask : 6;  // 6 bits for visibility (1 per face)
@@ -45,44 +95,31 @@ struct Chunk {
 private:
 	bool checkValidBlock(const uint8_VEC& block_coordinate);
 	void updateVisibilityMask(Block& currBlock, const uint8_VEC& blockCoord);
-	void insertBlocks(const std::vector<uint8_VEC>& block_coordinates, std::vector<uint8_VEC>& visibleBlocks);
-
-	void generateVertexArray(const Block& block, const uint8_VEC& blockCoordinate, std::array<float, 32>& face_vertex, int face) const {
-		size_t arr_index = 0;
-		for (int vertex = 0; vertex < 4; vertex++) {
-			int index = face * 32 + vertex * 8;
-
-			//Positions
-			face_vertex[arr_index++] = Shapes::textured_cube_vertices[index] + blockCoordinate.x;
-			face_vertex[arr_index++] = Shapes::textured_cube_vertices[index + 1] + blockCoordinate.y;
-			face_vertex[arr_index++] = Shapes::textured_cube_vertices[index + 2] + blockCoordinate.z;
-			index += 3;
-
-			//Normals
-			face_vertex[arr_index++] = Shapes::textured_cube_vertices[index];
-			face_vertex[arr_index++] = Shapes::textured_cube_vertices[index + 1];
-			face_vertex[arr_index++] = Shapes::textured_cube_vertices[index + 2];
-			index += 3;
-
-			//UV
-			face_vertex[arr_index++] = Shapes::textured_cube_vertices[index];
-			face_vertex[arr_index++] = Shapes::textured_cube_vertices[index + 1];
+	void getVisibleBlocks(std::vector<uint8_VEC>& visibleBlocks);
+	
+	void addFace(Chunk_Data& data, const uint8_VEC& blockPos, const Face_Data& faceData) {
+		static size_t vertexOffset = 0;
+		for (size_t i = 0; i < 4; i++) {
+			uint8_VEC vertex_pos = 
+			{
+				uint8_t(blockPos.x + faceData.offsets[i].x),
+				uint8_t(blockPos.y + faceData.offsets[i].y),
+				uint8_t(blockPos.z + faceData.offsets[i].z)
+			};
+			data.chunk_vertices.emplace_back(vertex_pos, faceData.vertex_data[i]);
 		}
-	}
-	void generateIndexArray(const Block& block, std::array<uint32_t, 6>& block_indices, int face, uint64_t vertexOffset) const {
-		for (int i = 0; i < 6; i++) {
-			int faceOffset = face * 6 + i;
-			uint32_t currIndex = static_cast<uint32_t>(Shapes::cube_indices[faceOffset] + vertexOffset);
-			block_indices[i] = currIndex;
+		for (size_t i = 0; i < 6; i++) {
+			data.chunk_indices.push_back(vertexOffset + faceData.indices[i]);
 		}
+		vertexOffset += 4;
 	}
-	void generateChunk(const std::vector<uint8_VEC>& block_coordinates, std::vector<uint32_t>& chunk_indices, std::vector<float>& chunk_vertex);
+
 public:
 
 	Blocks blocks{};
 	BufferObjects chunkData{};
 
-	Chunk(const std::vector<uint8_VEC>& cubeCoordinates);
+	Chunk();
 };
 
 namespace Chunk_Methods {

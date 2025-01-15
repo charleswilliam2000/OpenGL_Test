@@ -2,6 +2,8 @@
 #define BUFFERS_H
 
 #include "stdafx.h"
+#include "Shape.h"
+
 #include <array> 
 #include <vector>
 
@@ -27,7 +29,7 @@ public:
 
     BufferObjects() {}
 
-    BufferObjects(const std::vector<float>& vertex, const std::array<VertexAttributes, Attributes_Details::num_objectAttributes>& attributes, const std::vector<uint32_t>& indices);
+    BufferObjects(const std::vector<Vertex>& vertex, const std::array<VertexAttributes, Attributes_Details::num_objectAttributes>& attributes, const std::vector<uint32_t>& indices);
 
     BufferObjects(BufferObjects&& other) noexcept
         : VAO(other.VAO), VBO(other.VBO), EBO(other.EBO), object_indices(other.object_indices) {
