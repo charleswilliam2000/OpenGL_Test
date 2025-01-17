@@ -38,12 +38,12 @@ int main() {
         
 
         renderer.addLightSourceShader(lightShader._shaderProgram);
-        renderer.addLightSourceData({ lightSource.VAO, 0, Shape_Indices::Cube, {17.0f, 17.0f, 17.0f} });
+        renderer.addLightSourceData({ lightSource.VAO, 0, Shape_Indices::Cube, {18.0f, 18.0f, 18.0f} });
         renderer.addWireframeShader(wireframeShader._shaderProgram);
 
         screen.associateRenderer(renderer);
                             //Pos                           //Front                     //Up
-        Camera camera({ glm::vec3(17.0f, 17.0f, 17.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f) });
+        Camera camera({ glm::vec3(18.0f, 18.0f, 19.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f) });
         screen.insertCamera(camera);
         screen.run();
 

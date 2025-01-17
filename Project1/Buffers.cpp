@@ -2,8 +2,8 @@
 
 namespace Attributes_Details {
     std::array<VertexAttributes, num_objectAttributes> objectAttributes = {
-        VertexAttributes{0, 3, GL_BYTE,  GL_FALSE, 4 * sizeof(uint8_t), (void*)0 },            //Coordinates
-        VertexAttributes{1, 1, GL_BYTE,  GL_FALSE, 4 * sizeof(uint8_t), (void*)(3 * sizeof(uint8_t)) }, // Packed bits
+        VertexAttributes{0, 3, GL_BYTE,  GL_FALSE, sizeof(Vertex), (void*)0 },            //Coordinates
+        VertexAttributes{1, 1, GL_BYTE,  GL_FALSE, sizeof(Vertex), (void*)(3 * sizeof(GLbyte)) }, // Packed bits (Normals, uv)
     };
 
    std::array<VertexAttributes, 1> lightSourceAttributes = {
@@ -29,9 +29,11 @@ BufferObjects::BufferObjects(
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32_t), indices.data(), GL_STATIC_DRAW);
 
 
-    for (const auto& attr : attributes) {
-        glVertexAttribPointer(attr.index, attr.componentCount, attr.type, attr.normalized, attr.stride, attr.offset);
-        glEnableVertexAttribArray(attr.index);
-    }
+    glVertexAttribPointer(attributes[0].index, attributes[0].componentCount, attributes[0].type, attributes[0].normalized, attributes[0].stride, attributes[0].offset);
+    glEnableVertexAttribArray(attributes[0].index);
+
+    glVertexAttribIPointer(attributes[1].index, attributes[1].componentCount, attributes[1].type, attributes[1].stride, attributes[1].offset);
+    glEnableVertexAttribArray(attributes[1].index);
+    
     glBindVertexArray(0);
 }

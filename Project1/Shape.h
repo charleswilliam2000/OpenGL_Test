@@ -18,6 +18,15 @@ namespace Shape_Indices {
     constexpr unsigned char Cube = 36;
 };
 
+struct alignas(4) Vertex {
+    std::array<GLbyte, 3> coordinates = {0, 0, 0};
+    GLbyte vertex_data = 0; // 4 for normals, and 2 for uv. The rest is unusued bits
+
+    Vertex() {}
+    constexpr Vertex(std::array<GLbyte, 3> coordinates, uint8_t vertex_data) : coordinates(coordinates), vertex_data(vertex_data) {}
+};
+
+
 namespace Shapes {
     constexpr std::array<float, Vertex_Data::Triangle> triangle_vertices = {
         // positions         // colors              //Textures
