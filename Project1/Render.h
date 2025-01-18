@@ -41,8 +41,8 @@ public:
 	void addWireframeShader(uint32_t wireframeShader);
 	void terminateShaderPrograms();
 
-	void addObjectData(const Drawable& drawable);
-	void addLightSourceData(const Drawable& lightSource);
+	void addObjectData(uint32_t VAO, uint32_t texture, uint32_t indices, float_VEC pos);
+	void addLightSourceData(uint32_t VAO, uint32_t texture, uint32_t indices, float_VEC pos);
 	void render(const glm::vec3& cameraPos, const glm::mat4& cameraView, bool wireframeMode) const;
 };
 

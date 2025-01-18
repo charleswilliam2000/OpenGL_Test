@@ -25,10 +25,10 @@
     <Filter Include="Header Files\Miscs">
       <UniqueIdentifier>{2a6c304a-63bf-4575-a74e-e48324258c1b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Chunk">
+    <Filter Include="Header Files\WorldGen">
       <UniqueIdentifier>{35908eeb-c08f-47f4-81e5-32b502a16955}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Chunk">
+    <Filter Include="Source Files\WorldGen">
       <UniqueIdentifier>{b7bc2a48-d6f3-45a7-8adf-cf4d6e2990e5}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -94,10 +94,13 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Chunk.cpp">
-      <Filter>Source Files\Chunk</Filter>
+      <Filter>Source Files\WorldGen</Filter>
     </ClCompile>
     <ClCompile Include="vectors.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="World.cpp">
+      <Filter>Source Files\WorldGen</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -120,7 +123,7 @@
       <Filter>Header Files\Miscs</Filter>
     </ClInclude>
     <ClInclude Include="Chunk.h">
-      <Filter>Header Files\Chunk</Filter>
+      <Filter>Header Files\WorldGen</Filter>
     </ClInclude>
     <ClInclude Include="stdafx.h">
       <Filter>Header Files\Miscs</Filter>
@@ -133,6 +136,9 @@
     </ClInclude>
     <ClInclude Include="Texture.h">
       <Filter>Header Files\Miscs</Filter>
+    </ClInclude>
+    <ClInclude Include="World.h">
+      <Filter>Header Files\WorldGen</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

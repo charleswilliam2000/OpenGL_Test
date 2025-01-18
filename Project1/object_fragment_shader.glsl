@@ -10,7 +10,6 @@ struct Light {
 	vec3 specular;
 };
 
-
 in vec3 FragPos;
 in vec2 TextureCoords;
 in vec3 Normal;

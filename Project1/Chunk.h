@@ -7,9 +7,11 @@
 
 #include <array>
 #include <vector>
+#include <functional>
 
 namespace Chunk_Constants {
-    constexpr size_t Dimension_Size = 16;
+    constexpr size_t Dimension_1DSize = 16;
+	constexpr size_t Dimension_2DSize = 256;
 }
 
 struct Face_Data {
@@ -109,30 +111,33 @@ struct Block_Attribute {
 
 struct Block {
 	uint16_t x : 16;
-	//Block_Attribute attribute[16];
-
 	inline void setX(uint16_t in_x) { x |= (1 << in_x); }
 	inline bool getX(uint16_t in_x) const { return (x & (1 << in_x)) != 0; }
 
 };
 
 struct Chunk {
-	using Blocks = std::array<std::array<Block, Chunk_Constants::Dimension_Size>, Chunk_Constants::Dimension_Size>;
+	using Blocks = std::array<std::array<Block, Chunk_Constants::Dimension_1DSize>, Chunk_Constants::Dimension_1DSize>;
 private:
 	bool checkValidBlock(const uint8_VEC& block_coordinate);
-	bool isBoundaryBlock(const uint8_VEC& pos) const {
-		return pos.x != 0 || pos.y != 0 || pos.z != 0 ||
-			pos.x != Chunk_Constants::Dimension_Size - 1 || pos.y != Chunk_Constants::Dimension_Size - 1 || pos.z != Chunk_Constants::Dimension_Size - 1;
+	bool getBlock(uint8_t x, uint8_t y, uint8_t z) const {
+		return blocks[y][z].getX(x);
 	}
-	
-	void addFace(Chunk_Data& data, const uint8_VEC& blockPos, const Face_Data& faceData) const {
-		static uint32_t vertexOffset = 0;
+
+	uint32_t getVisibleFaces(
+		const uint8_VEC& block_coordinate,
+		const uint8_VEC& chunkMinBounds,
+		const uint8_VEC& chunkMaxBounds,
+		const std::function<bool(int8_t x, int8_t y, int8_t z)>& getNeighborBlock
+	) const;
+
+	void addFace(Chunk_Data& data, const uint8_VEC& blockWorldPos, const Face_Data& faceData, uint32_t& vertexOffset) const {
 		for (const auto& vertex : faceData.vertices) {
 			std::array<GLbyte, 3> vertex_pos =
 			{
-				GLbyte(static_cast<GLbyte>(blockPos.x) + vertex.coordinates[0]),
-				GLbyte(static_cast<GLbyte>(blockPos.y) + vertex.coordinates[1]),
-				GLbyte(static_cast<GLbyte>(blockPos.z) + vertex.coordinates[2])
+				GLbyte(static_cast<GLbyte>(blockWorldPos.x) + vertex.coordinates[0]),
+				GLbyte(static_cast<GLbyte>(blockWorldPos.y) + vertex.coordinates[1]),
+				GLbyte(static_cast<GLbyte>(blockWorldPos.z) + vertex.coordinates[2])
 			};
 			data.chunk_vertices.emplace_back(vertex_pos, vertex.vertex_data);
 		}
@@ -143,16 +148,25 @@ private:
 	}
 
 public:
+	struct NeighborChunks {
+		Chunk
+			* west		= nullptr,
+			* bottom	= nullptr,
+			* north		= nullptr,
 
-	Blocks blocks{};
+			* east		= nullptr,
+			* top		= nullptr,
+			* south		= nullptr;
+	} neightborChunks;
+
 	BufferObjects chunkData{};
+	float_VEC pos{};
+	Blocks blocks{};
 
-	Chunk();
+
+	Chunk() {}
+	void generate(float_VEC in_pos);
 };
-
-namespace Chunk_Methods {
-	std::array<bool, 6> getAdjacentState(const Chunk::Blocks& blocks, const uint8_VEC& block_coordinate);
-}
 
 
 

@@ -31,5 +31,5 @@ void main() {
     float sign = (isNegative) ? -1.0 : 1.0;
     Normal = vec3(nx, ny, nz) * sign; 
 
-  gl_Position = projection * view * vec4(FragPos, 1.0);
+  gl_Position = projection * view * model * vec4(aPos, 1.0);
 }

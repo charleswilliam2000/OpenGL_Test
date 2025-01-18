@@ -170,6 +170,7 @@
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="vectors.cpp" />
     <ClCompile Include="WindowGUI.cpp" />
+    <ClCompile Include="World.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Buffers.h" />
@@ -183,6 +184,7 @@
     <ClInclude Include="Texture.h" />
     <ClInclude Include="vectors.h" />
     <ClInclude Include="WindowGUI.h" />
+    <ClInclude Include="World.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

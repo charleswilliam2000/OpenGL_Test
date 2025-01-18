@@ -21,17 +21,18 @@ void Renderer::terminateShaderPrograms() {
 	glDeleteProgram(_lightSourceShader);
 }
 
-void Renderer::addObjectData(const Drawable& drawable) {
-	_objectsData.push_back(drawable);
+void Renderer::addObjectData(uint32_t VAO, uint32_t texture, uint32_t indices, float_VEC pos) {
+	_objectsData.emplace_back(VAO, texture, indices, pos);
 }
 
-void Renderer::addLightSourceData(const Drawable& lightSource)
+void Renderer::addLightSourceData(uint32_t VAO, uint32_t texture, uint32_t indices, float_VEC pos)
 {
-	_lightSource = lightSource;
+	_lightSource = { VAO, texture, indices, pos };
 }
 
 void Renderer::render(const glm::vec3& cameraPos, const glm::mat4& cameraView, bool wireframeMode) const {
-	uint32_t lastTexture		= 0; 
+	uint32_t lastTexture		= 0;
+	glm::mat4 objectModel		= glm::mat4(1.0f);
 	glm::mat4 projection		= glm::perspective(glm::radians(45.0f), (float)Constants::WINDOW_WIDTH / (float)Constants::WINDOW_HEIGHT, 0.1f, 100.0f);
 	glm::vec3 light_coord		= glm::vec3(_lightSource.coordinate.x, _lightSource.coordinate.y, _lightSource.coordinate.z);
 	glm::mat4 lightSourceModel	= glm::translate(glm::mat4(1.0f), light_coord);
@@ -54,16 +55,15 @@ void Renderer::render(const glm::vec3& cameraPos, const glm::mat4& cameraView, b
 		Shader_Methods::setUniformVec3(_objectShaders[0], "light.specular", glm::vec3(1.0f, 1.0f, 1.0f));
 	}
 
+	Shader_Methods::setUniformMat4(_objectShaders[0], "projection", projection);
+	Shader_Methods::setUniformMat4(_objectShaders[0], "view", cameraView);
+
 	for (const auto& object : _objectsData) {
 		if (object.texture != lastTexture) {
 			Texture_Methods::activateTexture(object.texture, GL_TEXTURE0);
 			lastTexture = object.texture;
 		}
-		glm::mat4 objectModel = glm::mat4(1.0f);
-		
-		Shader_Methods::setUniformMat4(_objectShaders[0], "projection", projection);
-		Shader_Methods::setUniformMat4(_objectShaders[0], "view", cameraView);
-		Shader_Methods::setUniformMat4(_objectShaders[0], "model", objectModel);
+		Shader_Methods::setUniformMat4(_objectShaders[0], "model", glm::translate(objectModel, glm::vec3(object.coordinate.x, object.coordinate.y, object.coordinate.z)));
 
 		draw(object.VAO, object.indices);
 	}

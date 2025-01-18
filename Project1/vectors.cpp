@@ -1,19 +1,5 @@
 #include "vectors.h"
 
-uint16_VEC uint16_VEC::getAdjacentCoordinate(const Faces& face) const {
-	switch (face) {
-	case Faces::NORTH:		return { x, y, static_cast<uint16_t>((z - 1 > 0) ? z : 0) };
-	case Faces::SOUTH:		return { x, y, static_cast<uint16_t>(z + 1) };
-	case Faces::EAST:		return { static_cast<uint16_t>(x + 1), y, z };
-	case Faces::WEST:		return { static_cast<uint16_t>((x - 1 > 0) ? x : 0), y, z };
-	case Faces::TOP:		return { x, static_cast<uint16_t>(y + 1), z };
-	case Faces::BOTTOM:		return { x, static_cast<uint16_t>((y - 1 > 0) ? y : 0), z };
-
-	}
-	std::cerr << "\nUnable to determine face!";
-	throw std::runtime_error("\nFace not recognized!");
-}
-
 uint32_VEC uint32_VEC::getAdjacentCoordinate(const Faces& face) const
 {
 	switch (face) {

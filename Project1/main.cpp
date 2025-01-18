@@ -1,6 +1,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stdafx.h"
-#include "Chunk.h"
+#include "World.h"
 #include "WindowGUI.h"
 
 int main() {
@@ -29,21 +29,25 @@ int main() {
 
         Texture texture("dirt.jpg");
         Shader_Methods::setUniform1i(objectShader._shaderProgram, "myTextures", texture._textureID);
-        Chunk chunk;
+
+        World world; 
+        world.generateChunk(2);
         BufferObjects lightSource(Shapes::base_cube_vertices, Attributes_Details::lightSourceAttributes, Shapes::cube_indices);
 
         Renderer renderer;
         renderer.addObjectShader(objectShader._shaderProgram);
-        renderer.addObjectData({ chunk.chunkData.VAO, texture._textureID, chunk.chunkData.object_indices, {0.0f, 0.0f, 0.0f} });
-        
+
+        for (const auto& chunk : world._chunks) {
+            renderer.addObjectData(chunk.chunkData.VAO, texture._textureID, chunk.chunkData.object_indices, chunk.pos);
+        }
 
         renderer.addLightSourceShader(lightShader._shaderProgram);
-        renderer.addLightSourceData({ lightSource.VAO, 0, Shape_Indices::Cube, {18.0f, 18.0f, 18.0f} });
+        renderer.addLightSourceData(lightSource.VAO, 0, Shape_Indices::Cube, {18.0f, 18.0f, 18.0f});
         renderer.addWireframeShader(wireframeShader._shaderProgram);
 
         screen.associateRenderer(renderer);
                             //Pos                           //Front                     //Up
-        Camera camera({ glm::vec3(18.0f, 18.0f, 19.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f) });
+        Camera camera({ glm::vec3(20.0f, 20.0f, 20.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f) });
         screen.insertCamera(camera);
         screen.run();
 
