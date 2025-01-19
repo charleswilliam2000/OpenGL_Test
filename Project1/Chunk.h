@@ -103,9 +103,9 @@ struct Block_Attribute {
 	uint8_t visibility_mask : 6;  // 6 bits for visibility (1 per face)
 	uint8_t padding : 2;
 
-	inline void setFaceVisible(Faces face) { visibility_mask |= (1 << static_cast<int>(face)); }
-	inline void setFaceHidden(Faces face) { visibility_mask &= ~(1 << static_cast<int>(face)); }
-	inline bool isFaceVisible(Faces face) const { return (visibility_mask & (1 << static_cast<int>(face))) != 0; }
+	inline void setFaceVisible(FACES face) { visibility_mask |= (1 << static_cast<int>(face)); }
+	inline void setFaceHidden(FACES face) { visibility_mask &= ~(1 << static_cast<int>(face)); }
+	inline bool isFaceVisible(FACES face) const { return (visibility_mask & (1 << static_cast<int>(face))) != 0; }
 	inline bool isHidden() const { return visibility_mask == 0; }
 };
 
@@ -128,7 +128,7 @@ private:
 		const uint8_VEC& block_coordinate,
 		const uint8_VEC& chunkMinBounds,
 		const uint8_VEC& chunkMaxBounds,
-		const std::function<bool(int8_t x, int8_t y, int8_t z)>& getNeighborBlock
+		const std::function<bool(const FACES& face, uint8_VEC pos)>& getNeighborChunkBlock
 	) const;
 
 	void addFace(Chunk_Data& data, const uint8_VEC& blockWorldPos, const Face_Data& faceData, uint32_t& vertexOffset) const {
@@ -149,14 +149,12 @@ private:
 
 public:
 	struct NeighborChunks {
-		Chunk
-			* west		= nullptr,
-			* bottom	= nullptr,
-			* north		= nullptr,
+		std::array<Chunk*, 6> neighbors;
 
-			* east		= nullptr,
-			* top		= nullptr,
-			* south		= nullptr;
+		NeighborChunks() {
+			neighbors.fill(nullptr);
+		}
+		//Six neighbors WEST / BOTTOM / NORTH / EAST / TOP / SOUTH
 	} neightborChunks;
 
 	BufferObjects chunkData{};

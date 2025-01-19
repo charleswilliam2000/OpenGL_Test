@@ -15,7 +15,11 @@ bool Chunk::checkValidBlock(const uint8_VEC& block_coordinate) {
 	return true;
 }
 
-uint32_t Chunk::getVisibleFaces(const uint8_VEC& block_coordinate, const uint8_VEC& chunkMinBounds, const uint8_VEC& chunkMaxBounds, const std::function<bool(int8_t x, int8_t y, int8_t z)>& getNeighborBlock) const
+uint32_t Chunk::getVisibleFaces(
+	const uint8_VEC& block_coordinate, 
+	const uint8_VEC& chunkMinBounds, 
+	const uint8_VEC& chunkMaxBounds, 
+	const std::function<bool(const FACES& face, uint8_VEC pos)>& getNeighborChunkBlock) const
 {
 	
 	uint8_t
@@ -26,7 +30,7 @@ uint32_t Chunk::getVisibleFaces(const uint8_VEC& block_coordinate, const uint8_V
 	uint32_t numVisibleFaces = 0;
 
 	if (x == chunkMinBounds.x) { // West
-		if (!getNeighborBlock(-1, y ,z)) {
+		if (!getNeighborChunkBlock(FACES::WEST, block_coordinate)) {
 			numVisibleFaces *= 10;
 			numVisibleFaces += 1;
 		}
@@ -36,63 +40,62 @@ uint32_t Chunk::getVisibleFaces(const uint8_VEC& block_coordinate, const uint8_V
 		numVisibleFaces += 1;
 	}
 
-	if (y == chunkMinBounds.y) {
-		if (!getNeighborBlock(x, -1, z)) {
+	if (y == chunkMinBounds.y) { // Bottom
+		if (!getNeighborChunkBlock(FACES::BOTTOM, block_coordinate)) {
 			numVisibleFaces *= 10;
 			numVisibleFaces += 2;
 		}
 	}
-	else if (!getBlock(x, y - 1, z)) { // Bottom
+	else if (!getBlock(x, y - 1, z)) { 
 		numVisibleFaces *= 10;
 		numVisibleFaces += 2;
 	}
 
-	if (z == chunkMinBounds.z) {
-		if (!getNeighborBlock(x, y, -1)) {
+	if (z == chunkMinBounds.z) { // North
+		if (!getNeighborChunkBlock(FACES::NORTH, block_coordinate)) {
 			numVisibleFaces *= 10;
 			numVisibleFaces += 3;
 		}
 	}
-	else if (!getBlock(x, y, z - 1)) { // North
+	else if (!getBlock(x, y, z - 1)) { 
 		numVisibleFaces *= 10;
 		numVisibleFaces += 3;
 	}
 
-	if (x == chunkMaxBounds.x) {
-		if (!getNeighborBlock(16, y, z)) {
+	if (x == chunkMaxBounds.x) { // East
+		if (!getNeighborChunkBlock(FACES::EAST, block_coordinate)) {
 			numVisibleFaces *= 10;
 			numVisibleFaces += 4;
 		}
 	}
-	else if (!getBlock(x + 1, y, z)) {  // East
+	else if (!getBlock(x + 1, y, z)) {  
 		numVisibleFaces *= 10;
 		numVisibleFaces += 4;
 	}
 
-	if (y == chunkMaxBounds.y) {
-		if (!getNeighborBlock(x, 16, z)) {
+	if (y == chunkMaxBounds.y) { // Top
+		if (!getNeighborChunkBlock(FACES::TOP, block_coordinate)) {
 			numVisibleFaces *= 10;
 			numVisibleFaces += 5;
 		}
 	}
-	else if (!getBlock(x, y + 1, z)) { // Top
+	else if (!getBlock(x, y + 1, z)) { 
 		numVisibleFaces *= 10;
 		numVisibleFaces += 5;
 	}
 
-	if (z == chunkMaxBounds.y) {
-		if (!getNeighborBlock(x, y, 16)) {
+	if (z == chunkMaxBounds.y) { // South
+		if (!getNeighborChunkBlock(FACES::SOUTH, block_coordinate)) {
 			numVisibleFaces *= 10;
 			numVisibleFaces += 6;
 		}
 	}
-	else if (!getBlock(x, y, z + 1)) { // South
+	else if (!getBlock(x, y, z + 1)) {
 		numVisibleFaces *= 10;
 		numVisibleFaces += 6;
 	}
 
 	return numVisibleFaces;
-	
 }
 
 void Chunk::generate(float_VEC in_pos) {
@@ -104,36 +107,42 @@ void Chunk::generate(float_VEC in_pos) {
 	Chunk_Data data;
 	uint32_t vertexOffset = 0;
 
-	auto getNeighborBlock = [&](int8_t x, int8_t y, int8_t z) -> bool {
-
-		if (x < chunkMin.x) return neightborChunks.west && neightborChunks.west->getBlock(15, y, z);
-		if (x > chunkMax.x) return neightborChunks.east && neightborChunks.east->getBlock(0, y, z);
-		
-		if (y < chunkMin.y) return neightborChunks.bottom && neightborChunks.bottom->getBlock(x, 15, z);
-		if (y > chunkMax.y) return neightborChunks.top && neightborChunks.top->getBlock(x, 0, z);
-		
-		if (z < chunkMin.z) return neightborChunks.north && neightborChunks.north->getBlock(x, y, 15);
-		if (z > chunkMax.z) return neightborChunks.south && neightborChunks.south->getBlock(x, y, 0);
-		return false;
+	auto getNeighborChunkBlock = [&](const FACES& face, uint8_VEC pos) -> bool {
+		switch (face) {
+		case FACES::WEST: 
+			return neightborChunks.neighbors[static_cast<int>(face)] && neightborChunks.neighbors[static_cast<int>(face)]->getBlock(15, pos.y, pos.z);
+		case FACES::BOTTOM:
+			return neightborChunks.neighbors[static_cast<int>(face)] && neightborChunks.neighbors[static_cast<int>(face)]->getBlock(pos.x, 15, pos.z);
+		case FACES::NORTH:
+			return neightborChunks.neighbors[static_cast<int>(face)] && neightborChunks.neighbors[static_cast<int>(face)]->getBlock(pos.x, pos.y, 15);
+		case FACES::EAST:
+			return neightborChunks.neighbors[static_cast<int>(face)] && neightborChunks.neighbors[static_cast<int>(face)]->getBlock(0, pos.y, pos.z);
+		case FACES::TOP:
+			return neightborChunks.neighbors[static_cast<int>(face)] && neightborChunks.neighbors[static_cast<int>(face)]->getBlock(pos.x, 0, pos.z);
+		case FACES::SOUTH:
+			return neightborChunks.neighbors[static_cast<int>(face)] && neightborChunks.neighbors[static_cast<int>(face)]->getBlock(pos.x, pos.y, 0);
+		default:
+			throw std::runtime_error("\nUnable to deduce face!");
+		}
 		};
 
 	for (uint8_t y = 0; y < Chunk_Constants::Dimension_1DSize; y++) {
 		for (uint8_t z = 0; z < Chunk_Constants::Dimension_1DSize; z++) {
 			for (uint8_t x = 0; x < Chunk_Constants::Dimension_1DSize; x++) {
 
-				if (!getBlock(x, y, z)) continue;
-				else {
-					uint8_VEC blockCoordinate = { x, y, z }; // To query blocks array 
-					uint32_t visibleFaces = getVisibleFaces(blockCoordinate, chunkMin, chunkMax, getNeighborBlock);
+				if (!getBlock(x, y, z)) 
+					continue;
 
-					if (visibleFaces == 0) continue;
-					else {
-						while (visibleFaces != 0) {
-							uint32_t currFace = (visibleFaces % 10) - 1; // Minus one because of added offset 
-							addFace(data, blockCoordinate, FACE_DATA[currFace], vertexOffset);
-							visibleFaces /= 10;
-						}
-					}
+				uint8_VEC blockCoordinate = { x, y, z }; // To query blocks array 
+				uint32_t visibleFaces = getVisibleFaces(blockCoordinate, chunkMin, chunkMax, getNeighborChunkBlock);
+
+				if (visibleFaces == 0) 
+					continue;
+
+				while (visibleFaces != 0) {
+					uint32_t currFace = (visibleFaces % 10) - 1; // Minus one because of added offset 
+					addFace(data, blockCoordinate, FACE_DATA[currFace], vertexOffset);
+					visibleFaces /= 10;
 				}
 
 

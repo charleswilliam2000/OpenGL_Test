@@ -1,56 +1,113 @@
 #include "World.h"
-void World::generateTerrain(Chunk::Blocks& chunkTerrain)
+
+double PerlinNoise::multi3D_Noise(double x, double y, double z, int octaves, double persistence, double lacunarity, double initialFrequency, double initialAmplitude) const {
+	double total = 0.0;
+	double maxValue = 0.0; // Used for normalization
+	double frequency = initialFrequency;
+	double amplitude = initialAmplitude;
+
+	for (int i = 0; i < octaves; i++) {
+		total += noise(x * frequency, y * frequency, z * frequency) * amplitude;
+
+		maxValue += amplitude;
+
+		frequency *= lacunarity;
+		amplitude *= persistence;
+	}
+
+	return total / maxValue;
+}
+
+
+
+void World::generateTerrain(const siv::PerlinNoise& perlin, Chunk::Blocks& chunkTerrain, const float_VEC& chunkOffset) const
 {
+
+	double frequencyX = 0.01 + chunkOffset.x * 0.001;
+	double frequencyY = 0.01 + chunkOffset.y * 0.001;
+	double frequencyZ = 0.01 + chunkOffset.z * 0.001;
+
+	const double chunkOffsetX = static_cast<double>(chunkOffset.x);
+	const double chunkOffsetY = static_cast<double>(chunkOffset.y);
+	const double chunkOffsetZ = static_cast<double>(chunkOffset.z);
+
+	double totalValue = 0.0f; int numTotal = 0; double avgVal = 0.0f; 
+
 	for (uint8_t y = 0; y < Chunk_Constants::Dimension_1DSize; y++) {
 		for (uint8_t z = 0; z < Chunk_Constants::Dimension_1DSize; z++) {
 			for (uint8_t x = 0; x < Chunk_Constants::Dimension_1DSize; x++) {
+				if (y < 13) chunkTerrain[y][z].setX(x);
+				else if (y > 14) break;
+				else {
 
-				chunkTerrain[y][z].setX(x);
+					double 
+						globalX = (chunkOffsetX + static_cast<double>(x)) * frequencyX,
+						globalY = (chunkOffsetY + static_cast<double>(y)) * frequencyY,
+						globalZ = (chunkOffsetZ + static_cast<double>(z)) * frequencyZ;
+
+					double perlinVal = perlin.octave3D_01(globalX, globalY, globalZ, 4, 0.5);
+					totalValue += perlinVal; ++numTotal; avgVal = totalValue / static_cast<double>(numTotal);
+
+					if (perlinVal < avgVal) chunkTerrain[y][z].setX(x);
+				}
 			}
 		}
 	}
+	std::cout << "Average value: " << avgVal << "\n";
 }
 
-void World::generateChunk(size_t numChunks)
+void World::generateChunk(size_t gridSize)
 {
-	float chunk_X = .0f, chunk_Y = .0f, chunk_Z = .0f;
+	const siv::PerlinNoise::seed_type seed = 123456u;
+	const siv::PerlinNoise perlin{ seed };
 
-	_chunks.resize(numChunks);
-	for (size_t i = 0; i < numChunks; i++) {
-		generateTerrain(_chunks[i].blocks);
+	_chunks.resize(gridSize * gridSize);
+
+	constexpr std::array<std::pair<FACES, int32_VEC>, 4> neighborOffsets = { {
+		{FACES::WEST,	{-1, 0, 0}},
+		{FACES::NORTH,	{0, 0, -1}},
+
+		{FACES::EAST,	{1, 0, 0}},
+		{FACES::SOUTH,	{0, 0, 1}}
+		}
+	};
+
+	for (size_t z = 0; z < gridSize; z++) {
+		for (size_t x = 0; x < gridSize; x++) {
+			size_t index = z * gridSize + x;
+
+			float_VEC chunkOffset = {
+				static_cast<float>(x) * 16.0f,
+				0.0f,
+				static_cast<float>(z) * 16.0f
+			};
+
+			generateTerrain(perlin, _chunks[index].blocks, chunkOffset);
+
+			for (const auto& neighbor : neighborOffsets) {
+				int neighborX = static_cast<int>(x) + neighbor.second.x;
+				int neighborZ = static_cast<int>(z) + neighbor.second.z;
+
+				if (neighborX >= 0 && neighborX < static_cast<int>(gridSize) &&
+					neighborZ >= 0 && neighborZ < static_cast<int>(gridSize)) {
+					size_t neighborIndex = neighborZ * gridSize + neighborX;
+					_chunks[index].neightborChunks.neighbors[static_cast<int>(neighbor.first)] = &_chunks[neighborIndex];
+				}
+			}
+		}
 	}
 
-	for (size_t i = 0; i < numChunks; i++) {
-		switch (i) {
-		case 0:
-			_chunks[i].neightborChunks.north = &_chunks[i + 1];
-			_chunks[i].generate({chunk_X, chunk_Y, chunk_Z});
-			break;
-		case 1:
-			_chunks[i].neightborChunks.south = &_chunks[i - 1];
-			_chunks[i].generate({ chunk_X, chunk_Y, chunk_Z - 16.0f });
-			break;
-		case 2:
-			_chunks[i].generate({ chunk_X + 16.0f, chunk_Y, chunk_Z });
-			break;
-		case 3:
-			_chunks[i].generate({chunk_X, chunk_Y, chunk_Z + 16.0f});
-			break;
-		case 4:
-			_chunks[i].generate({chunk_X - 16.0f, chunk_Y, chunk_Z});
-			break;
-		case 5:
-			_chunks[i].generate({ chunk_X - 16.0f, chunk_Y, chunk_Z - 16.0f });
-			break;
-		case 6:
-			_chunks[i].generate({ chunk_X + 16.0f, chunk_Y, chunk_Z - 16.0f });
-			break;
-		case 7:
-			_chunks[i].generate({ chunk_X + 16.0f, chunk_Y, chunk_Z + 16.0f });
-			break;
-		case 8:
-			_chunks[i].generate({ chunk_X - 16.0f, chunk_Y, chunk_Z + 16.0f });
-			break;
+	for (size_t z = 0; z < gridSize; z++) {
+		for (size_t x = 0; x < gridSize; x++) {
+			size_t index = z * gridSize + x;
+
+			float_VEC chunkOffset = {
+				static_cast<float>(x) * 16.0f,
+				0.0f,
+				static_cast<float>(z) * 16.0f
+			};
+
+			_chunks[index].generate(chunkOffset);
 		}
 	}
 }

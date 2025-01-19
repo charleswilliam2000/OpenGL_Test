@@ -140,5 +140,8 @@
     <ClInclude Include="World.h">
       <Filter>Header Files\WorldGen</Filter>
     </ClInclude>
+    <ClInclude Include="PerlinNoise.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

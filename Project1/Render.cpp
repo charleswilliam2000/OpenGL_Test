@@ -45,14 +45,22 @@ void Renderer::render(const glm::vec3& cameraPos, const glm::mat4& cameraView, b
 	else {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		Shader_Methods::useShaderProgram(_objectShaders[0]);
-		Shader_Methods::setUniformVec3(_objectShaders[0], "lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
-		
-		Shader_Methods::setUniformVec3(_objectShaders[0], "light.direction", -light_coord);
 		Shader_Methods::setUniformVec3(_objectShaders[0], "cameraPos", cameraPos);
+		Shader_Methods::setUniformVec3(_objectShaders[0], "directional_light.direction", glm::vec3(- 0.2f, -1.0f, -0.3f));
+		Shader_Methods::setUniformVec3(_objectShaders[0], "directional_light.ambient",	 glm::vec3(0.2f, 0.2f, 0.2f));
+		Shader_Methods::setUniformVec3(_objectShaders[0], "directional_light.diffuse",	 glm::vec3(0.5f, 0.5f, 0.5f));
+		Shader_Methods::setUniformVec3(_objectShaders[0], "directional_light.specular",  glm::vec3(1.0f, 1.0f, 1.0f));
 
-		Shader_Methods::setUniformVec3(_objectShaders[0], "light.ambient", glm::vec3(0.2f, 0.2f, 0.2f));
-		Shader_Methods::setUniformVec3(_objectShaders[0], "light.diffuse", glm::vec3(0.5f, 0.5f, 0.5f));
-		Shader_Methods::setUniformVec3(_objectShaders[0], "light.specular", glm::vec3(1.0f, 1.0f, 1.0f));
+		Shader_Methods::setUniformVec3(_objectShaders[0], "point_light[0].position", light_coord);
+
+		Shader_Methods::setUniformVec3(_objectShaders[0], "point_light[0].ambient", glm::vec3(0.05f, 0.05f, 0.05f));
+		Shader_Methods::setUniformVec3(_objectShaders[0], "point_light[0].diffuse", glm::vec3(0.8f, 0.8f, 0.8f));
+		Shader_Methods::setUniformVec3(_objectShaders[0], "point_light[0].specular", glm::vec3(1.0f, 1.0f, 1.0f));
+
+		Shader_Methods::setUniform1f(_objectShaders[0], "point_light[0].constant", 0.5f);
+		Shader_Methods::setUniform1f(_objectShaders[0], "point_light[0].linear", 0.09f);
+		Shader_Methods::setUniform1f(_objectShaders[0], "point_light[0].quadratic", 0.032f);
+
 	}
 
 	Shader_Methods::setUniformMat4(_objectShaders[0], "projection", projection);

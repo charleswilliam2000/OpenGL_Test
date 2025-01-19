@@ -12,6 +12,7 @@ namespace Shader_Methods {
 	void useShaderProgram(const uint32_t& shaderProgram);
 
 	void setUniform1i(const uint32_t& shaderProgram, const char* name, int value);
+	void setUniform1f(const uint32_t& shaderProgram, const char* name, float value);
 	void setUniformVec3(const uint32_t& shaderProgram, const char* name, const glm::vec3& vector);
 	void setUniformMat4(const uint32_t& shaderProgram, const char* name, const glm::mat4& matrix);
 
