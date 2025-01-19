@@ -98,7 +98,7 @@ uint32_t Chunk::getVisibleFaces(
 	return numVisibleFaces;
 }
 
-void Chunk::generate(float_VEC in_pos) {
+Chunk_Data Chunk::generate(float_VEC in_pos) {
 	pos = in_pos;
 
 	uint8_VEC chunkMin = { 0, 0, 0 };
@@ -133,7 +133,7 @@ void Chunk::generate(float_VEC in_pos) {
 				if (!getBlock(x, y, z)) 
 					continue;
 
-				uint8_VEC blockCoordinate = { x, y, z }; // To query blocks array 
+				uint8_VEC blockCoordinate = { x, y, z }; 
 				uint32_t visibleFaces = getVisibleFaces(blockCoordinate, chunkMin, chunkMax, getNeighborChunkBlock);
 
 				if (visibleFaces == 0) 
@@ -149,5 +149,5 @@ void Chunk::generate(float_VEC in_pos) {
 			}
 		}
 	}
-	chunkData = BufferObjects(data.chunk_vertices, Attributes_Details::objectAttributes, data.chunk_indices);
+	return data;
 }

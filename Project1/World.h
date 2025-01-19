@@ -3,6 +3,8 @@
 
 #include <iostream>
 #include <algorithm>
+#include <thread>
+#include <future>
 
 #include "Chunk.h"
 #include "PerlinNoise.hpp"

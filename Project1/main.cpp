@@ -31,7 +31,7 @@ int main() {
         Shader_Methods::setUniform1i(objectShader._shaderProgram, "myTextures", texture._textureID);
 
         World world; 
-        world.generateChunk(5);
+        world.generateChunk(4);
         BufferObjects lightSource(Shapes::base_cube_vertices, Attributes_Details::lightSourceAttributes, Shapes::cube_indices);
 
         Renderer renderer;

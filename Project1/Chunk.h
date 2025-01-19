@@ -163,7 +163,7 @@ public:
 
 
 	Chunk() {}
-	void generate(float_VEC in_pos);
+	Chunk_Data generate(float_VEC in_pos);
 };
 
 
