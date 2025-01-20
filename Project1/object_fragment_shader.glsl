@@ -25,7 +25,7 @@ struct PointLight {
 in vec3 FragPos;
 in vec2 TextureCoords;
 in vec3 Normal;
-
+in float layerIndex;
 
 uniform DirLight directional_light;
 
@@ -33,7 +33,7 @@ uniform DirLight directional_light;
 uniform PointLight point_light[NUM_POINT_LIGHTS];
 
 uniform vec3 cameraPos;
-uniform sampler2D myTextures;
+uniform sampler2DArray myTextures;
 
 vec3 calculateDirLight(DirLight light, vec3 normal, vec3 viewDir) 
 {
@@ -81,5 +81,5 @@ void main()
     for(int i = 0; i < NUM_POINT_LIGHTS; i++)
         result += calculatePointLight(point_light[i], norm, FragPos, viewDir);    
     
-    fragColors = texture(myTextures, TextureCoords) * vec4(result, 1.0);
+    fragColors = texture(myTextures, vec3(TextureCoords, layerIndex)) * vec4(result, 1.0);
 }

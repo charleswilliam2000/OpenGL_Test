@@ -1,21 +1,6 @@
 #include "Chunk.h"
 
-bool Chunk::checkValidBlock(const uint8_VEC& block_coordinate) {
-	if (block_coordinate.x < 0 || block_coordinate.y < 0 || block_coordinate.z < 0) {
-		std::cerr << "\nOne coordinate is smaller than 0! Coordinates: "
-			<< block_coordinate.x << " - " << block_coordinate.y << " - " << block_coordinate.z;
-		throw std::runtime_error("\nOne coordinate is smaller than 0!");
-	}
-
-	if (block_coordinate.x >= 16 || block_coordinate.y >= 16 || block_coordinate.z >= 16) {
-		std::cerr << "\nOne coordinate is larger than 32! Coordinates: "
-			<< block_coordinate.x << " - " << block_coordinate.y << " - " << block_coordinate.z;
-		throw std::runtime_error("\nOne coordinate is larger than 32!");
-	}
-	return true;
-}
-
-uint32_t Chunk::getVisibleFaces(
+uint32_t WorldChunk::getVisibleFaces(
 	const uint8_VEC& block_coordinate, 
 	const uint8_VEC& chunkMinBounds, 
 	const uint8_VEC& chunkMaxBounds, 
@@ -35,7 +20,7 @@ uint32_t Chunk::getVisibleFaces(
 			numVisibleFaces += 1;
 		}
 	}
-	else if (!getBlock(x - 1, y, z)) { 
+	else if (!isBlockSolid(x - 1, y, z)) {
 		numVisibleFaces *= 10;
 		numVisibleFaces += 1;
 	}
@@ -46,7 +31,7 @@ uint32_t Chunk::getVisibleFaces(
 			numVisibleFaces += 2;
 		}
 	}
-	else if (!getBlock(x, y - 1, z)) { 
+	else if (!isBlockSolid(x, y - 1, z)) {
 		numVisibleFaces *= 10;
 		numVisibleFaces += 2;
 	}
@@ -57,7 +42,7 @@ uint32_t Chunk::getVisibleFaces(
 			numVisibleFaces += 3;
 		}
 	}
-	else if (!getBlock(x, y, z - 1)) { 
+	else if (!isBlockSolid(x, y, z - 1)) {
 		numVisibleFaces *= 10;
 		numVisibleFaces += 3;
 	}
@@ -68,7 +53,7 @@ uint32_t Chunk::getVisibleFaces(
 			numVisibleFaces += 4;
 		}
 	}
-	else if (!getBlock(x + 1, y, z)) {  
+	else if (!isBlockSolid(x + 1, y, z)) {
 		numVisibleFaces *= 10;
 		numVisibleFaces += 4;
 	}
@@ -79,7 +64,7 @@ uint32_t Chunk::getVisibleFaces(
 			numVisibleFaces += 5;
 		}
 	}
-	else if (!getBlock(x, y + 1, z)) { 
+	else if (!isBlockSolid(x, y + 1, z)) {
 		numVisibleFaces *= 10;
 		numVisibleFaces += 5;
 	}
@@ -90,7 +75,7 @@ uint32_t Chunk::getVisibleFaces(
 			numVisibleFaces += 6;
 		}
 	}
-	else if (!getBlock(x, y, z + 1)) {
+	else if (!isBlockSolid(x, y, z + 1)) {
 		numVisibleFaces *= 10;
 		numVisibleFaces += 6;
 	}
@@ -98,7 +83,7 @@ uint32_t Chunk::getVisibleFaces(
 	return numVisibleFaces;
 }
 
-Chunk_Data Chunk::generate(float_VEC in_pos) {
+Chunk_Data ChunkMesh::generate(float_VEC in_pos, const WorldChunk& worldChunk) {
 	pos = in_pos;
 
 	uint8_VEC chunkMin = { 0, 0, 0 };
@@ -110,17 +95,17 @@ Chunk_Data Chunk::generate(float_VEC in_pos) {
 	auto getNeighborChunkBlock = [&](const FACES& face, uint8_VEC pos) -> bool {
 		switch (face) {
 		case FACES::WEST: 
-			return neightborChunks.neighbors[static_cast<int>(face)] && neightborChunks.neighbors[static_cast<int>(face)]->getBlock(15, pos.y, pos.z);
+			return worldChunk.neighborChunks.neighbors[static_cast<int>(face)] && worldChunk.neighborChunks.neighbors[static_cast<int>(face)]->isBlockSolid(15, pos.y, pos.z);
 		case FACES::BOTTOM:
-			return neightborChunks.neighbors[static_cast<int>(face)] && neightborChunks.neighbors[static_cast<int>(face)]->getBlock(pos.x, 15, pos.z);
+			return worldChunk.neighborChunks.neighbors[static_cast<int>(face)] && worldChunk.neighborChunks.neighbors[static_cast<int>(face)]->isBlockSolid(pos.x, 15, pos.z);
 		case FACES::NORTH:
-			return neightborChunks.neighbors[static_cast<int>(face)] && neightborChunks.neighbors[static_cast<int>(face)]->getBlock(pos.x, pos.y, 15);
+			return worldChunk.neighborChunks.neighbors[static_cast<int>(face)] && worldChunk.neighborChunks.neighbors[static_cast<int>(face)]->isBlockSolid(pos.x, pos.y, 15);
 		case FACES::EAST:
-			return neightborChunks.neighbors[static_cast<int>(face)] && neightborChunks.neighbors[static_cast<int>(face)]->getBlock(0, pos.y, pos.z);
+			return worldChunk.neighborChunks.neighbors[static_cast<int>(face)] && worldChunk.neighborChunks.neighbors[static_cast<int>(face)]->isBlockSolid(0, pos.y, pos.z);
 		case FACES::TOP:
-			return neightborChunks.neighbors[static_cast<int>(face)] && neightborChunks.neighbors[static_cast<int>(face)]->getBlock(pos.x, 0, pos.z);
+			return worldChunk.neighborChunks.neighbors[static_cast<int>(face)] && worldChunk.neighborChunks.neighbors[static_cast<int>(face)]->isBlockSolid(pos.x, 0, pos.z);
 		case FACES::SOUTH:
-			return neightborChunks.neighbors[static_cast<int>(face)] && neightborChunks.neighbors[static_cast<int>(face)]->getBlock(pos.x, pos.y, 0);
+			return worldChunk.neighborChunks.neighbors[static_cast<int>(face)] && worldChunk.neighborChunks.neighbors[static_cast<int>(face)]->isBlockSolid(pos.x, pos.y, 0);
 		default:
 			throw std::runtime_error("\nUnable to deduce face!");
 		}
@@ -130,11 +115,11 @@ Chunk_Data Chunk::generate(float_VEC in_pos) {
 		for (uint8_t z = 0; z < Chunk_Constants::Dimension_1DSize; z++) {
 			for (uint8_t x = 0; x < Chunk_Constants::Dimension_1DSize; x++) {
 
-				if (!getBlock(x, y, z)) 
+				if (!worldChunk.isBlockSolid(x, y, z)) 
 					continue;
 
 				uint8_VEC blockCoordinate = { x, y, z }; 
-				uint32_t visibleFaces = getVisibleFaces(blockCoordinate, chunkMin, chunkMax, getNeighborChunkBlock);
+				uint32_t visibleFaces = worldChunk.getVisibleFaces(blockCoordinate, chunkMin, chunkMax, getNeighborChunkBlock);
 
 				if (visibleFaces == 0) 
 					continue;

@@ -12,6 +12,7 @@
 namespace Chunk_Constants {
     constexpr size_t Dimension_1DSize = 16;
 	constexpr size_t Dimension_2DSize = 256;
+	constexpr size_t Dimension_3DSize = 4096;
 }
 
 struct Face_Data {
@@ -24,10 +25,10 @@ constexpr std::array<Face_Data, 6> FACE_DATA = {
 		{ // WEST
 			{
 				{
-					{{0, 0, 1}, 0b00001100},
-					{{0, 1, 1}, 0b00011100},
-					{{0, 1, 0}, 0b00111100},
-					{{0, 0, 0}, 0b00101100}
+					{{0, 0, 1}, 0b01101100},
+					{{0, 1, 1}, 0b01111100},
+					{{0, 1, 0}, 0b01001100},
+					{{0, 0, 0}, 0b01011100}
 				}
 			},
 				{ 0, 2, 1, 0, 3, 2 }
@@ -47,10 +48,10 @@ constexpr std::array<Face_Data, 6> FACE_DATA = {
 		{ // NORTH
 			{
 				{
-					{{0, 0, 0}, 0b00001001},
-					{{0, 1, 0}, 0b00011001},
-					{{1, 1, 0}, 0b00111001},
-					{{1, 0, 0}, 0b00101001}
+					{{0, 0, 0}, 0b01011001},
+					{{0, 1, 0}, 0b01001001},
+					{{1, 1, 0}, 0b01101001},
+					{{1, 0, 0}, 0b01111001}
 				}
 			},
 				{0, 2, 1, 0, 3, 2}
@@ -58,10 +59,10 @@ constexpr std::array<Face_Data, 6> FACE_DATA = {
 		{ // EAST
 			{
 				{
-					{{1, 0, 1}, 0b00010100},
-					{{1, 0, 0}, 0b00000100},
-					{{1, 1, 0}, 0b00100100},
-					{{1, 1, 1}, 0b00110100}
+					{{1, 0, 1}, 0b01010100},
+					{{1, 0, 0}, 0b01110100},
+					{{1, 1, 0}, 0b01100100},
+					{{1, 1, 1}, 0b01000100}
 				}
 			},
 				{0, 2, 1, 0, 3, 2}
@@ -69,10 +70,10 @@ constexpr std::array<Face_Data, 6> FACE_DATA = {
 		{ // TOP
 			{
 				{
-					{{0, 1, 1}, 0b00000010},
-					{{1, 1, 1}, 0b00100010},
-					{{1, 1, 0}, 0b00110010},
-					{{0, 1, 0}, 0b00010010}
+					{{0, 1, 1}, 0b10000010},
+					{{1, 1, 1}, 0b10100010},
+					{{1, 1, 0}, 0b10110010},
+					{{0, 1, 0}, 0b10010010}
 				}
 			},
 				{0, 2, 1, 0, 3, 2}
@@ -80,10 +81,10 @@ constexpr std::array<Face_Data, 6> FACE_DATA = {
 		{ // SOUTH
 			{
 				{
-					{{0, 0, 1}, 0b00000001},
-					{{1, 0, 1}, 0b00100001},
-					{{1, 1, 1}, 0b00110001},
-					{{0, 1, 1}, 0b00010001}
+					{{0, 0, 1}, 0b01010001},
+					{{1, 0, 1}, 0b01110001},
+					{{1, 1, 1}, 0b01100001},
+					{{0, 1, 1}, 0b01000001}
 				}
 			},
 				{0, 2, 1, 0, 3, 2}
@@ -109,19 +110,59 @@ struct Block_Attribute {
 	inline bool isHidden() const { return visibility_mask == 0; }
 };
 
-struct Block {
-	uint16_t x : 16;
-	inline void setX(uint16_t in_x) { x |= (1 << in_x); }
-	inline bool getX(uint16_t in_x) const { return (x & (1 << in_x)) != 0; }
-
+enum class BLOCK_ID : uint64_t {
+	AIR  = 0,
+	DIRT = 1,
+	GRASS = 2,
+	STONE = 3
 };
 
-struct Chunk {
-	using Blocks = std::array<std::array<Block, Chunk_Constants::Dimension_1DSize>, Chunk_Constants::Dimension_1DSize>;
-private:
-	bool checkValidBlock(const uint8_VEC& block_coordinate);
-	bool getBlock(uint8_t x, uint8_t y, uint8_t z) const {
-		return blocks[y][z].getX(x);
+struct Block_ID {
+	uint64_t ID : 64; // 4 bits for every one block (Thus, 4 x 16 = 64 bits)
+	inline void setID(BLOCK_ID id, uint64_t x) {
+		if (x < Chunk_Constants::Dimension_1DSize) {
+			uint64_t mask = ~(0xFULL); 
+			uint64_t shiftAmount = static_cast<uint64_t>(4) * x;
+
+			ID &= ~(mask << shiftAmount); // Reset existing ID in the block
+			ID |= (static_cast<uint64_t>(id) << shiftAmount); // Set the new ID
+		}
+		else throw std::runtime_error("\nAssigned X exceeded chunk limit");
+		
+	}
+
+	inline BLOCK_ID getID(uint64_t x) const {
+		if (x < Chunk_Constants::Dimension_1DSize) {
+			uint64_t shiftAmount = static_cast<uint64_t>(4) * x;
+			uint64_t mask = 0xFULL; // Mask for the lowest 4 bits
+
+			uint64_t result = (ID >> shiftAmount) & mask; // Extract relevant 4 bits
+			return static_cast<BLOCK_ID>(result);
+		}
+		else {
+			throw std::runtime_error("\nAssigned X exceeded chunk limit");
+		}
+	}
+
+	Block_ID() : ID(0) {}
+};
+
+struct WorldChunk {
+	using Blocks = std::array<std::array<Block_ID, Chunk_Constants::Dimension_1DSize>, Chunk_Constants::Dimension_1DSize>;
+
+	struct NeighborChunks {
+		std::array<WorldChunk*, 6> neighbors;
+
+		NeighborChunks() {
+			neighbors.fill(nullptr);
+		}
+		//Six neighbors WEST / BOTTOM / NORTH / EAST / TOP / SOUTH
+	} neighborChunks;
+
+	Blocks blocks{};
+
+	bool isBlockSolid(uint8_t x, uint8_t y, uint8_t z) const {
+		return blocks[y][z].getID(x) != BLOCK_ID::AIR;
 	}
 
 	uint32_t getVisibleFaces(
@@ -130,7 +171,9 @@ private:
 		const uint8_VEC& chunkMaxBounds,
 		const std::function<bool(const FACES& face, uint8_VEC pos)>& getNeighborChunkBlock
 	) const;
+};
 
+struct ChunkMesh {
 	void addFace(Chunk_Data& data, const uint8_VEC& blockWorldPos, const Face_Data& faceData, uint32_t& vertexOffset) const {
 		for (const auto& vertex : faceData.vertices) {
 			std::array<GLbyte, 3> vertex_pos =
@@ -148,24 +191,12 @@ private:
 	}
 
 public:
-	struct NeighborChunks {
-		std::array<Chunk*, 6> neighbors;
-
-		NeighborChunks() {
-			neighbors.fill(nullptr);
-		}
-		//Six neighbors WEST / BOTTOM / NORTH / EAST / TOP / SOUTH
-	} neightborChunks;
-
 	BufferObjects chunkData{};
 	float_VEC pos{};
-	Blocks blocks{};
 
-
-	Chunk() {}
-	Chunk_Data generate(float_VEC in_pos);
+	ChunkMesh() {}
+	Chunk_Data generate(float_VEC in_pos, const WorldChunk& worldChunk);
 };
-
 
 
 #endif // CHUNK_H

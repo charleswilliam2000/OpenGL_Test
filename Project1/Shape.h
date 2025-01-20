@@ -20,7 +20,7 @@ namespace Shape_Indices {
 
 struct alignas(4) Vertex {
     std::array<GLbyte, 3> coordinates = {0, 0, 0};
-    GLbyte vertex_data = 0; // 4 for normals, and 2 for uv. The rest is unusued bits
+    GLbyte vertex_data = 0; // 4 for normals, 2 for uv and 2 for layerIndex. 
 
     Vertex() {}
     constexpr Vertex(std::array<GLbyte, 3> coordinates, uint8_t vertex_data) : coordinates(coordinates), vertex_data(vertex_data) {}

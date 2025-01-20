@@ -164,7 +164,6 @@
     <ClCompile Include="FileUtils.cpp" />
     <ClCompile Include="FileUtils.h" />
     <ClCompile Include="Shader.cpp" />
-    <ClCompile Include="Shape.cpp" />
     <ClCompile Include="main.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
     </ClCompile>

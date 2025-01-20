@@ -5,6 +5,7 @@ layout (location = 1) in int aPackedBits;
 out vec3 FragPos;
 out vec3 Normal;
 out vec2 TextureCoords;
+out float layerIndex;
 
 uniform mat4 model;
 uniform mat4 view;
@@ -24,6 +25,9 @@ void main() {
 
     float v = float((aPacked >> 4) & 1); 
     float u = float((aPacked >> 5) & 1); 
+
+    int mask = 3; // Representing a 2 bit masks (Since LayerIndex is 2 bits worth)
+    layerIndex = float((aPacked >> 6) & mask);
 
     TextureCoords = vec2(u, v);
 

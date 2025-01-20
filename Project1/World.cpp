@@ -1,59 +1,27 @@
 #include "World.h"
 
-double PerlinNoise::multi3D_Noise(double x, double y, double z, int octaves, double persistence, double lacunarity, double initialFrequency, double initialAmplitude) const {
-	double total = 0.0;
-	double maxValue = 0.0; // Used for normalization
-	double frequency = initialFrequency;
-	double amplitude = initialAmplitude;
-
-	for (int i = 0; i < octaves; i++) {
-		total += noise(x * frequency, y * frequency, z * frequency) * amplitude;
-
-		maxValue += amplitude;
-
-		frequency *= lacunarity;
-		amplitude *= persistence;
-	}
-
-	return total / maxValue;
-}
-
-
-
-void World::generateTerrain(const siv::PerlinNoise& perlin, Chunk::Blocks& chunkTerrain, const float_VEC& chunkOffset) const
+void World::generateTerrain(const siv::PerlinNoise& perlin, WorldChunk::Blocks& chunkTerrain, const float_VEC& chunkOffset) const
 {
-
-	double frequencyX = 0.01 + chunkOffset.x * 0.001;
-	double frequencyY = 0.01 + chunkOffset.y * 0.001;
-	double frequencyZ = 0.01 + chunkOffset.z * 0.001;
+	const double frequencyX = 0.001 + chunkOffset.x * 0.00001;
+	const double frequencyZ = 0.001 + chunkOffset.z * 0.00001;
 
 	const double chunkOffsetX = static_cast<double>(chunkOffset.x);
-	const double chunkOffsetY = static_cast<double>(chunkOffset.y);
 	const double chunkOffsetZ = static_cast<double>(chunkOffset.z);
 
-	double totalValue = 0.0f; int numTotal = 0; double avgVal = 0.0f; 
+	for (uint8_t z = 0; z < Chunk_Constants::Dimension_1DSize; z++) {
+		for (uint8_t x = 0; x < Chunk_Constants::Dimension_1DSize; x++) {
+			double globalX = (chunkOffsetX + static_cast<double>(x)) * frequencyX;
+			double globalZ = (chunkOffsetZ + static_cast<double>(z)) * frequencyZ;
 
-	for (uint8_t y = 0; y < Chunk_Constants::Dimension_1DSize; y++) {
-		for (uint8_t z = 0; z < Chunk_Constants::Dimension_1DSize; z++) {
-			for (uint8_t x = 0; x < Chunk_Constants::Dimension_1DSize; x++) {
-				if (y < 13) chunkTerrain[y][z].setX(x);
-				else if (y > 14) break;
-				else {
+			double perlinVal = std::pow(perlin.octave2D_01(globalX, globalZ, 8, 0.5), 2);
+			int height = static_cast<int>(perlinVal * static_cast<double>(Chunk_Constants::Dimension_1DSize));
+			_ASSERT_EXPR(height < Chunk_Constants::Dimension_1DSize, "\nHeight higher than chunk's dimension");
 
-					double 
-						globalX = (chunkOffsetX + static_cast<double>(x)) * frequencyX,
-						globalY = (chunkOffsetY + static_cast<double>(y)) * frequencyY,
-						globalZ = (chunkOffsetZ + static_cast<double>(z)) * frequencyZ;
-
-					double perlinVal = perlin.octave3D_01(globalX, globalY, globalZ, 4, 0.5);
-					totalValue += perlinVal; ++numTotal; avgVal = totalValue / static_cast<double>(numTotal);
-
-					if (perlinVal < avgVal) chunkTerrain[y][z].setX(x);
-				}
+			for (uint8_t y = 0; y < height; y++) {
+				chunkTerrain[y][z].setID(BLOCK_ID::DIRT, x);
 			}
 		}
 	}
-	//std::cout << "Average value: " << avgVal << "\n";
 }
 
 void World::generateChunk(size_t gridSize)
@@ -93,7 +61,7 @@ void World::generateChunk(size_t gridSize)
 					static_cast<float>(z) * 16.0f
 				};
 
-				generateTerrain(perlin, _chunks[i].blocks, chunkOffset);
+				generateTerrain(perlin, _chunks[i].first.blocks, chunkOffset);
 
 				for (const auto& neighbor : neighborOffsets) {
 					int neighborX = static_cast<int>(x) + neighbor.second.x;
@@ -102,7 +70,7 @@ void World::generateChunk(size_t gridSize)
 					if (neighborX >= 0 && neighborX < static_cast<int>(gridSize) &&
 						neighborZ >= 0 && neighborZ < static_cast<int>(gridSize)) {
 						size_t neighborIndex = neighborZ * gridSize + neighborX;
-						_chunks[i].neightborChunks.neighbors[static_cast<int>(neighbor.first)] = &_chunks[neighborIndex];
+						_chunks[i].first.neighborChunks.neighbors[static_cast<int>(neighbor.first)] = &_chunks[neighborIndex].first;
 					}
 				}
 			}
@@ -130,8 +98,7 @@ void World::generateChunk(size_t gridSize)
 					static_cast<float>(z) * 16.0f
 				};
 
-				auto chunkData = _chunks[i].generate(chunkOffset);
-				threadResults.push_back(std::make_pair(i, std::move(chunkData)));
+				threadResults.emplace_back(i, _chunks[i].second.generate(chunkOffset, _chunks[i].first));
 			}
 
 			return threadResults;
@@ -139,11 +106,10 @@ void World::generateChunk(size_t gridSize)
 	}
 
 	for (auto& future : meshFuture) {
-		auto threadResults = future.get(); 
-		size_t numChunks = threadResults.size();
+		const auto& threadResults = future.get(); 
 		for (const auto& [chunkIndex, chunkData] : threadResults) {
 
-			_chunks[chunkIndex].chunkData = BufferObjects(
+			_chunks[chunkIndex].second.chunkData = BufferObjects(
 				chunkData.chunk_vertices, 
 				Attributes_Details::objectAttributes,
 				chunkData.chunk_indices

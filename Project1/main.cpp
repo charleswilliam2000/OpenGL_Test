@@ -27,18 +27,19 @@ int main() {
         ShaderProgram lightShader("light_vertex_shader.glsl", "light_fragment_shader.glsl");
         ShaderProgram wireframeShader("wireframe_vertex_shader.glsl", "wireframe_fragment_shader.glsl");
 
-        Texture texture("dirt.jpg");
+        Texture texture("TextureAtlas.jpg");
         Shader_Methods::setUniform1i(objectShader._shaderProgram, "myTextures", texture._textureID);
 
         World world; 
-        world.generateChunk(4);
+
+        world.generateChunk(6);
         BufferObjects lightSource(Shapes::base_cube_vertices, Attributes_Details::lightSourceAttributes, Shapes::cube_indices);
 
         Renderer renderer;
         renderer.addObjectShader(objectShader._shaderProgram);
 
         for (const auto& chunk : world._chunks) {
-            renderer.addObjectData(chunk.chunkData.VAO, texture._textureID, chunk.chunkData.object_indices, chunk.pos);
+           renderer.addObjectData(chunk.second.chunkData.VAO, texture._textureID, chunk.second.chunkData.object_indices, chunk.second.pos);
         }
 
         renderer.addLightSourceShader(lightShader._shaderProgram);
