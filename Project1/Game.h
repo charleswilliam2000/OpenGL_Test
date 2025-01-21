@@ -1,8 +1,8 @@
-#ifndef WINDOWGUI_H
-#define WINDOWGUI_H
+#ifndef GAME_H
+#define GAME_H
 
 #include "stdafx.h"
-#include "Render.h"
+#include "World.h"
 
 namespace Callbacks {
     void framebuffer_size_callback(GLFWwindow* window, int height, int width);
@@ -10,25 +10,22 @@ namespace Callbacks {
     void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 }
 
-class Screen {
+class Game {
 private:
+    World* _world = nullptr;
+    Camera* _camera = nullptr;
     GLFWwindow* _window = nullptr;
-    Camera* camera = nullptr;
-    Renderer* renderer = nullptr;
-
 public:
     bool wireframeMode = false;
 
-    Screen(int width, int height, const char* title, GLFWmonitor* monitor = nullptr, GLFWwindow* share = nullptr);
+    Game(int width, int height, const char* title, GLFWmonitor* monitor = nullptr, GLFWwindow* share = nullptr);
+
+    void insertWorld(World* world);
     void run() const;
-
-    void associateRenderer(Renderer& in_renderer);
-    void insertCamera(Camera& in_camera);
-
+    void insertCamera(Camera* in_camera);
     void processMouseMovement(double xOffset, double yOffset);
 
-    ~Screen() {}
-
+    ~Game() {}
 };
 
-#endif WINDOWGUI_H
+#endif // GAME_H

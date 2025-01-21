@@ -1,7 +1,7 @@
 #define STB_IMAGE_IMPLEMENTATION
+
 #include "stdafx.h"
-#include "World.h"
-#include "WindowGUI.h"
+#include "Game.h"
 
 int main() {
     try {
@@ -10,8 +10,7 @@ int main() {
             throw std::runtime_error("Unable to initialize GLFW");
         }
 
-        Screen screen(Constants::WINDOW_HEIGHT, Constants::WINDOW_WIDTH, "OpenGL_window");
-
+        Game game(Constants::WINDOW_HEIGHT, Constants::WINDOW_WIDTH, "OpenGL_window");
         glfwSwapInterval(1); // Enable vsync
 
         if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
@@ -23,36 +22,25 @@ int main() {
         glEnable(GL_CULL_FACE);
         glCullFace(GL_FRONT);
 
-        ShaderProgram objectShader("object_vertex_shader.glsl", "object_fragment_shader.glsl");
-        ShaderProgram lightShader("light_vertex_shader.glsl", "light_fragment_shader.glsl");
+        ShaderProgram worldShader("object_vertex_shader.glsl", "object_fragment_shader.glsl");
+
+        WorldLighting worldLight( 
+            { Shapes::base_cube_vertices, Attributes_Details::lightSourceAttributes, Shapes::cube_indices }, 
+            "light_vertex_shader.glsl", 
+            "light_fragment_shader.glsl");
+        worldLight.addPointLight(glm::vec3(18.0f, 18.0f, 18.0f));
+
         ShaderProgram wireframeShader("wireframe_vertex_shader.glsl", "wireframe_fragment_shader.glsl");
-
         Texture texture("TextureAtlas.jpg");
-        Shader_Methods::setUniform1i(objectShader._shaderProgram, "myTextures", texture._textureID);
+        worldShader.setUniform1i("myTextures", texture._textureID);
 
-        World world; 
-
-        world.generateChunk(6);
-        BufferObjects lightSource(Shapes::base_cube_vertices, Attributes_Details::lightSourceAttributes, Shapes::cube_indices);
-
-        Renderer renderer;
-        renderer.addObjectShader(objectShader._shaderProgram);
-
-        for (const auto& chunk : world._chunks) {
-           renderer.addObjectData(chunk.second.chunkData.VAO, texture._textureID, chunk.second.chunkData.object_indices, chunk.second.pos);
-        }
-
-        renderer.addLightSourceShader(lightShader._shaderProgram);
-        renderer.addLightSourceData(lightSource.VAO, 0, Shape_Indices::Cube, {18.0f, 18.0f, 18.0f});
-        renderer.addWireframeShader(wireframeShader._shaderProgram);
-
-        screen.associateRenderer(renderer);
+        World world(&worldLight, worldShader, texture);
+        world.generateChunks(6);
                             //Pos                           //Front                     //Up
         Camera camera({ glm::vec3(20.0f, 20.0f, 20.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f) });
-        screen.insertCamera(camera);
-        screen.run();
-
-        renderer.terminateShaderPrograms();
+        game.insertCamera(&camera);
+        game.insertWorld(&world);
+        game.run();
         
     }
     catch (const std::runtime_error& e) { std::cout << e.what(); }

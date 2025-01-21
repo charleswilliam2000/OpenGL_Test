@@ -36,28 +36,27 @@ uint32_t Shader_Methods::compileShader(const char* source, const GLenum& type) {
     return shader;
 }
 
-void Shader_Methods::useShaderProgram(const uint32_t& shaderProgram) {
-    glUseProgram(shaderProgram);
+void ShaderProgram::useShaderProgram() const {
+    glUseProgram(_shaderProgram);
 }
 
-void Shader_Methods::setUniform1i(const uint32_t& shaderProgram, const char* name, int value) {
-    uint32_t location = glGetUniformLocation(shaderProgram, name);
+void ShaderProgram::setUniform1i(const char* name, int value) const {
+    uint32_t location = glGetUniformLocation(_shaderProgram, name);
     glUniform1i(location, value);
 }
 
-void Shader_Methods::setUniform1f(const uint32_t& shaderProgram, const char* name, float value) {
-    uint32_t location = glGetUniformLocation(shaderProgram, name);
+void ShaderProgram::setUniform1f(const char* name, float value) const {
+    uint32_t location = glGetUniformLocation(_shaderProgram, name);
     glUniform1f(location, value);
 }
 
-void Shader_Methods::setUniformVec3(const uint32_t& shaderProgram, const char* name, const glm::vec3& vector) {
-    uint32_t location = glGetUniformLocation(shaderProgram, name);
+void ShaderProgram::setUniformVec3(const char* name, const glm::vec3& vector) const {
+    uint32_t location = glGetUniformLocation(_shaderProgram, name);
     glUniform3fv(location, 1, glm::value_ptr(vector));
 }
 
-void Shader_Methods::setUniformMat4(const uint32_t& shaderProgram, const char* name, const glm::mat4& matrix)
-{
-    uint32_t location = glGetUniformLocation(shaderProgram, name);
+void ShaderProgram::setUniformMat4(const char* name, const glm::mat4& matrix) const {
+    uint32_t location = glGetUniformLocation(_shaderProgram, name);
     glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
 }
 

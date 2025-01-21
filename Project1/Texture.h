@@ -18,7 +18,8 @@ namespace Texture_Methods {
 }
 
 struct Texture {
-	uint32_t _textureID;
+	uint32_t _textureID = 0;
+	Texture() {}
 	Texture(const char* image_path);
 };
 #endif

@@ -159,8 +159,6 @@
     <ClCompile Include="Buffers.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Chunk.cpp" />
-    <ClCompile Include="Render.cpp" />
-    <ClCompile Include="Render.h" />
     <ClCompile Include="FileUtils.cpp" />
     <ClCompile Include="FileUtils.h" />
     <ClCompile Include="Shader.cpp" />
@@ -170,7 +168,7 @@
     <ClCompile Include="stdafxh.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="vectors.cpp" />
-    <ClCompile Include="WindowGUI.cpp" />
+    <ClCompile Include="Game.cpp" />
     <ClCompile Include="World.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -185,7 +183,7 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="vectors.h" />
-    <ClInclude Include="WindowGUI.h" />
+    <ClInclude Include="Game.h" />
     <ClInclude Include="World.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

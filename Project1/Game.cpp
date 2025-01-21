@@ -1,6 +1,6 @@
-#include "WindowGUI.h"
+#include "Game.h"
 
-void Screen::processMouseMovement(double xInPos, double yInPos) {
+void Game::processMouseMovement(double xInPos, double yInPos) {
     static bool firstMouse = true;
     static float lastX = Constants::WINDOW_HEIGHT / 2;
     static float lastY = Constants::WINDOW_WIDTH / 2;
@@ -19,18 +19,14 @@ void Screen::processMouseMovement(double xInPos, double yInPos) {
     lastX = xpos;
     lastY = ypos;
 
-    camera->handleMouseMovement(xOffset, yOffset);
+    _camera->handleMouseMovement(xOffset, yOffset);
 }
 
-void Screen::associateRenderer(Renderer& in_renderer) {
-    renderer = &in_renderer;
+void Game::insertCamera(Camera* in_camera) {
+    _camera = in_camera;
 }
 
-void Screen::insertCamera(Camera& in_camera) {
-    camera = &in_camera;
-}
-
-Screen::Screen(int width, int height, const char* title, GLFWmonitor* monitor, GLFWwindow* share)
+Game::Game(int width, int height, const char* title, GLFWmonitor* monitor, GLFWwindow* share)
     : _window(glfwCreateWindow(width, height, title, monitor, share)) {
     //For future extensions, add here
     if (!_window) {
@@ -49,29 +45,26 @@ Screen::Screen(int width, int height, const char* title, GLFWmonitor* monitor, G
     glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
-void Screen::run() const {
+void Game::insertWorld(World* game) {
+    _world = game;
+}
+
+void Game::run() const {
 
     if (!_window)
         throw std::runtime_error("Window not initialized!");
 
-    if (!camera)
+    if (!_camera)
         throw std::runtime_error("Camera not initialized!");
-
-    if (!renderer)
-        throw std::runtime_error("Renderer not initialized!");
     
-
     while (!glfwWindowShouldClose(_window)) {
-        camera->updateFrame();
-        camera->handleCameraMovement(_window);
-
-        glm::mat4 currCameraView = camera->updateCameraView();
-        glm::vec3 currCameraPos = camera->getPosition();
+        _camera->updateFrame();
+        _camera->handleCameraMovement(_window);
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        renderer->render(currCameraPos, currCameraView, wireframeMode);
+        _world->render(*_camera, wireframeMode);
             
         glfwSwapBuffers(_window);
         glfwPollEvents();
@@ -88,14 +81,14 @@ void Callbacks::framebuffer_size_callback(GLFWwindow* window, int height, int wi
 }
 
 void Callbacks::mouse_callback(GLFWwindow* window, double xpos, double ypos) {
-    Screen* windowInstance = static_cast<Screen*>(glfwGetWindowUserPointer(window));
+    Game* windowInstance = static_cast<Game*>(glfwGetWindowUserPointer(window));
     if (!windowInstance) return;
 
     windowInstance->processMouseMovement(xpos, ypos);
 }
 
 void Callbacks::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    Screen* windowInstance = static_cast<Screen*>(glfwGetWindowUserPointer(window));
+    Game* windowInstance = static_cast<Game*>(glfwGetWindowUserPointer(window));
     if (!windowInstance) return;
     
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
