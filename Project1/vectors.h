@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-enum class FACES : uint8_t {
+enum class FACES : uint32_t {
 	WEST = 0,
 	BOTTOM = 1,
 	NORTH = 2,

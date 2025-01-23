@@ -24,15 +24,15 @@ namespace Attributes_Details {
 
 struct BufferObjects {
 public:
+    size_t numVertices = 0, numIndices = 0;
     GLuint VAO = 0, VBO = 0, EBO = 0;
-    uint32_t object_indices = 0;
 
     BufferObjects() {}
 
     BufferObjects(const std::vector<Vertex>& vertex, const std::array<VertexAttributes, Attributes_Details::num_objectAttributes>& attributes, const std::vector<uint32_t>& indices);
 
     BufferObjects(BufferObjects&& other) noexcept
-        : VAO(other.VAO), VBO(other.VBO), EBO(other.EBO), object_indices(other.object_indices) {
+        : numVertices(other.numVertices), numIndices(other.numIndices), VAO(other.VAO), VBO(other.VBO), EBO(other.EBO) {
         other.VAO = other.VBO = other.EBO = 0; 
     }
 
@@ -41,7 +41,7 @@ public:
     BufferObjects(
         const std::array<float, arr1_size>& vertexData,
         const std::array<VertexAttributes, arr2_size>& attributes,
-        const std::array<uint32_t, arr3_size>& indices) {
+        const std::array<uint32_t, arr3_size>& indices) : numVertices(vertexData.size()), numIndices(indices.size()) {
         glGenVertexArrays(1, &VAO);
         glGenBuffers(1, &VBO);
         glGenBuffers(1, &EBO);
@@ -73,7 +73,9 @@ public:
             VAO = other.VAO;
             VBO = other.VBO;
             EBO = other.EBO;
-            object_indices = other.object_indices;
+
+            numVertices = other.numVertices;
+            numIndices = other.numIndices;
 
             other.VAO = other.VBO = other.EBO = 0; // Nullify moved resources
         }

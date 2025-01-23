@@ -16,78 +16,72 @@ namespace Chunk_Constants {
 }
 
 struct Face_Data {
-	std::array<Vertex, 4> vertices;
 	std::array<uint32_t, 6> indices;
+	std::array<Vertex, 4> vertices;
+	FACES face;
 };
 
 constexpr std::array<Face_Data, 6> FACE_DATA = { 
 	{
-		{ // WEST
-			{
-				{
-					{{0, 0, 1}, 0b01101100},
-					{{0, 1, 1}, 0b01111100},
-					{{0, 1, 0}, 0b01001100},
-					{{0, 0, 0}, 0b01011100}
-				}
+		{ 
+			{ 0, 2, 1, 0, 3, 2 },
+			{ //12 in binary: 1100
+				Vertex(0, 0, 1, 0, 2, 0), 
+				Vertex(0, 1, 1, 0, 3, 0), 
+				Vertex(0, 1, 0, 0, 0, 0), 
+				Vertex(0, 0, 0, 0, 1, 0)
 			},
-				{ 0, 2, 1, 0, 3, 2 }
+			{FACES::WEST},
 		},
-		{ // BOTTOM
-			{
-				{
-					{{0, 0, 1}, 0b00011010},
-					{{0, 0, 0}, 0b00001010},
-					{{1, 0, 0}, 0b00101010},
-					{{1, 0, 1}, 0b00111010}
-				}
-
+		{					
+			{0, 2, 1, 0, 3, 2},
+			{ //10 in binary: 1010
+				Vertex(0, 0, 1, 1, 1, 0),
+				Vertex(0, 0, 0, 1, 0, 0),
+				Vertex(1, 0, 0, 1, 2, 0),
+				Vertex(1, 0, 1, 1, 3, 0)
 			},
-				{0, 2, 1, 0, 3, 2}
+			{FACES::BOTTOM},
 		},
-		{ // NORTH
-			{
-				{
-					{{0, 0, 0}, 0b01011001},
-					{{0, 1, 0}, 0b01001001},
-					{{1, 1, 0}, 0b01101001},
-					{{1, 0, 0}, 0b01111001}
-				}
+		{ 
+			{0, 2, 1, 0, 3, 2},
+			{ //9 in binary: 1001
+				Vertex(0, 0, 0, 2, 1, 0),
+				Vertex(0, 1, 0, 2, 0, 0),
+				Vertex(1, 1, 0, 2, 2, 0),
+				Vertex(1, 0, 0, 2, 3, 0)
 			},
-				{0, 2, 1, 0, 3, 2}
+			{FACES::NORTH},
 		},
-		{ // EAST
+		{ 
+			{0, 2, 1, 0, 3, 2},
 			{
-				{
-					{{1, 0, 1}, 0b01010100},
-					{{1, 0, 0}, 0b01110100},
-					{{1, 1, 0}, 0b01100100},
-					{{1, 1, 1}, 0b01000100}
-				}
+				Vertex(1, 0, 1, 3, 1, 0),
+				Vertex(1, 0, 0, 3, 3, 0),
+				Vertex(1, 1, 0, 3, 2, 0),
+				Vertex(1, 1, 1, 3, 0, 0)
 			},
-				{0, 2, 1, 0, 3, 2}
+			{FACES::EAST},
 		},
-		{ // TOP
+		{ 
+			{0, 2, 1, 0, 3, 2},
 			{
-				{
-					{{0, 1, 1}, 0b10000010},
-					{{1, 1, 1}, 0b10100010},
-					{{1, 1, 0}, 0b10110010},
-					{{0, 1, 0}, 0b10010010}
-				}
+				Vertex(0, 1, 1, 4, 0, 0),
+				Vertex(1, 1, 1, 4, 2, 0),
+				Vertex(1, 1, 0, 4, 3, 0),
+				Vertex(0, 1, 0, 4, 1, 0)
 			},
-				{0, 2, 1, 0, 3, 2}
+			{FACES::TOP},
 		},
-		{ // SOUTH
+		{
+			{0, 2, 1, 0, 3, 2},
 			{
-				{
-					{{0, 0, 1}, 0b01010001},
-					{{1, 0, 1}, 0b01110001},
-					{{1, 1, 1}, 0b01100001},
-					{{0, 1, 1}, 0b01000001}
-				}
+				Vertex(0, 0, 1, 5, 1, 0),
+				Vertex(1, 0, 1, 5, 3, 0),
+				Vertex(1, 1, 1, 5, 2, 0),
+				Vertex(0, 1, 1, 5, 0, 0)
 			},
-				{0, 2, 1, 0, 3, 2}
+			{FACES::SOUTH},
 		}
 	}
 };
@@ -98,16 +92,6 @@ struct Chunk_Data {
 
 	using Indices = std::vector<uint32_t>;
 	Indices chunk_indices;
-};
-
-struct Block_Attribute {
-	uint8_t visibility_mask : 6;  // 6 bits for visibility (1 per face)
-	uint8_t padding : 2;
-
-	inline void setFaceVisible(FACES face) { visibility_mask |= (1 << static_cast<int>(face)); }
-	inline void setFaceHidden(FACES face) { visibility_mask &= ~(1 << static_cast<int>(face)); }
-	inline bool isFaceVisible(FACES face) const { return (visibility_mask & (1 << static_cast<int>(face))) != 0; }
-	inline bool isHidden() const { return visibility_mask == 0; }
 };
 
 enum class BLOCK_ID : uint64_t {
@@ -174,27 +158,11 @@ struct WorldChunk {
 };
 
 struct ChunkMesh {
-	void addFace(Chunk_Data& data, const uint8_VEC& blockWorldPos, const Face_Data& faceData, uint32_t& vertexOffset) const {
-		for (const auto& vertex : faceData.vertices) {
-			std::array<GLbyte, 3> vertex_pos =
-			{
-				GLbyte(static_cast<GLbyte>(blockWorldPos.x) + vertex.coordinates[0]),
-				GLbyte(static_cast<GLbyte>(blockWorldPos.y) + vertex.coordinates[1]),
-				GLbyte(static_cast<GLbyte>(blockWorldPos.z) + vertex.coordinates[2])
-			};
-			data.chunk_vertices.emplace_back(vertex_pos, vertex.vertex_data);
-		}
-		for (const auto& indice : faceData.indices) {
-			data.chunk_indices.push_back(vertexOffset + indice);
-		}
-		vertexOffset += 4;
-	}
-
-public:
 	BufferObjects chunkData{};
 	float_VEC pos{};
 
 	ChunkMesh() {}
+	void addFace(Chunk_Data& data, const uint8_VEC& blockWorldPos, const Face_Data& faceData, const BLOCK_ID& type, uint32_t& vertexOffset) const;
 	Chunk_Data generate(float_VEC in_pos, const WorldChunk& worldChunk);
 };
 

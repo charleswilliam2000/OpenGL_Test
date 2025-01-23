@@ -81,5 +81,5 @@ void main()
     for(int i = 0; i < NUM_POINT_LIGHTS; i++)
         result += calculatePointLight(point_light[i], norm, FragPos, viewDir);    
     
-    fragColors = texture(myTextures, vec3(TextureCoords, layerIndex)) * vec4(result, 1.0);
+    fragColors = texture(myTextures, vec3(TextureCoords, 0)) * vec4(result, 1.0);
 }

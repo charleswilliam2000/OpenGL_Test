@@ -1,5 +1,27 @@
 #include "World.h"
 
+GLenum glCheckError_(const char* file, int line)
+{
+	GLenum errorCode;
+	while ((errorCode = glGetError()) != GL_NO_ERROR)
+	{
+		std::string error;
+		switch (errorCode)
+		{
+		case GL_INVALID_ENUM:                  error = "INVALID_ENUM"; break;
+		case GL_INVALID_VALUE:                 error = "INVALID_VALUE"; break;
+		case GL_INVALID_OPERATION:             error = "INVALID_OPERATION"; break;
+		case GL_STACK_OVERFLOW:                error = "STACK_OVERFLOW"; break;
+		case GL_STACK_UNDERFLOW:               error = "STACK_UNDERFLOW"; break;
+		case GL_OUT_OF_MEMORY:                 error = "OUT_OF_MEMORY"; break;
+		case GL_INVALID_FRAMEBUFFER_OPERATION: error = "INVALID_FRAMEBUFFER_OPERATION"; break;
+		}
+		std::cout << error << " | " << file << " (" << line << ")" << std::endl;
+	}
+	return errorCode;
+
+}
+
 WorldLighting::WorldLighting(BufferObjects bufferObjects, const char* shaderVertexProgramName, const char* shaderFragmentProgramName)
 	: pointLightBuffers(std::move(bufferObjects)), pointLightShader(ShaderProgram(shaderVertexProgramName, shaderFragmentProgramName)) {
 };
@@ -62,7 +84,7 @@ void WorldLighting::renderPointLights(const glm::mat4& cameraView, const glm::ma
 		pointLightShader.setUniformMat4("projection", projectionMat);
 
 		glBindVertexArray(pointLightBuffers.VAO);
-		glDrawElements(GL_TRIANGLES, pointLightBuffers.object_indices, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(pointLightBuffers.numIndices), GL_UNSIGNED_INT, 0);
 	}
 }
 
@@ -149,7 +171,7 @@ void World::generateChunks(size_t gridSize)
 
 	for (auto& future : terrainFuture) {
 		future.get();
-	} 
+	}
 
 	std::vector<std::future<std::vector<std::pair<size_t, Chunk_Data>>>> meshFuture;
 	for (size_t thread = 0; thread < numThreads; thread++) {
@@ -157,7 +179,7 @@ void World::generateChunks(size_t gridSize)
 			size_t start = thread * chunksPerThread;
 			size_t end = std::min(start + chunksPerThread, gridSize * gridSize);
 
-			std::vector<std::pair<size_t, Chunk_Data>> threadResults; 
+			std::vector<std::pair<size_t, Chunk_Data>> threadResults;
 
 			for (size_t i = start; i < end; i++) {
 				size_t z = i / gridSize;
@@ -172,15 +194,15 @@ void World::generateChunks(size_t gridSize)
 			}
 
 			return threadResults;
-		}));
+			}));
 	}
 
 	for (auto& future : meshFuture) {
-		const auto& threadResults = future.get(); 
+		const auto& threadResults = future.get();
 		for (const auto& [chunkIndex, chunkData] : threadResults) {
 
 			_chunks[chunkIndex].second.chunkData = BufferObjects(
-				chunkData.chunk_vertices, 
+				chunkData.chunk_vertices,
 				Attributes_Details::objectAttributes,
 				chunkData.chunk_indices
 			);
@@ -191,15 +213,15 @@ void World::generateChunks(size_t gridSize)
 
 void World::render(const Camera& camera, bool wireframeMode) const {
 	struct MVP {
-		glm::mat4 
-			model = glm::mat4(1.0f), 
-			view = glm::mat4(1.0f), 
+		glm::mat4
+			model = glm::mat4(1.0f),
+			view = glm::mat4(1.0f),
 			projection = glm::mat4(1.0f);
 	} mvp_World;
 
 	uint32_t lastTexture = 0;
-	mvp_World.projection	= glm::perspective(glm::radians(45.0f), (float)Constants::WINDOW_WIDTH / (float)Constants::WINDOW_HEIGHT, 0.1f, 100.0f);
-	mvp_World.view			= camera.updateCameraView();
+	mvp_World.projection = glm::perspective(glm::radians(45.0f), (float)Constants::WINDOW_WIDTH / (float)Constants::WINDOW_HEIGHT, 0.1f, 100.0f);
+	mvp_World.view = camera.updateCameraView();
 
 	if (wireframeMode) {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -216,16 +238,16 @@ void World::render(const Camera& camera, bool wireframeMode) const {
 	_worldShader.setUniformMat4("projection", mvp_World.projection);
 	_worldShader.setUniformMat4("view", mvp_World.view);
 
-	for (const auto& chunk : _chunks) {		
+	for (const auto& chunk : _chunks) {
 		_worldShader.setUniformMat4(
-			"model", 
+			"model",
 			glm::translate(
-				mvp_World.model, 
+				mvp_World.model,
 				glm::vec3(chunk.second.pos.x, chunk.second.pos.y, chunk.second.pos.z)
 			)
 		);
 		glBindVertexArray(chunk.second.chunkData.VAO);
-		glDrawElements(GL_TRIANGLES, chunk.second.chunkData.object_indices, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, chunk.second.chunkData.numIndices, GL_UNSIGNED_INT, 0);
 	}
 	_worldLighting->renderPointLights(mvp_World.view, mvp_World.projection);
 }

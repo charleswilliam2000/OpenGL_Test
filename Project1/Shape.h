@@ -18,12 +18,29 @@ namespace Shape_Indices {
     constexpr unsigned char Cube = 36;
 };
 
-struct alignas(4) Vertex {
-    std::array<GLbyte, 3> coordinates = {0, 0, 0};
-    GLbyte vertex_data = 0; // 4 for normals, 2 for uv and 2 for layerIndex. 
+struct Vertex {
+    GLuint  x             : 5;
+    GLuint  y             : 5;
+    GLuint  z             : 5;
 
-    Vertex() {}
-    constexpr Vertex(std::array<GLbyte, 3> coordinates, uint8_t vertex_data) : coordinates(coordinates), vertex_data(vertex_data) {}
+    GLuint  normals       : 3;
+    GLuint  uv            : 2;
+    GLuint  layerIndex    : 4;
+    GLuint  paddings      : 8;
+
+    Vertex() : x(0), y(0), z(0), normals(0), uv(0), layerIndex(0), paddings(0) {}
+    constexpr Vertex(GLuint  x, GLuint  y, GLuint  z, GLuint  normals, GLuint  uv, GLuint  layerIndex)
+        : x(x), y(y), z(z), normals(normals), uv(uv), layerIndex(layerIndex), paddings(0) { }
+
+    void makeVertex(GLuint  in_x, GLuint  in_y, GLuint  in_z, GLuint  in_normals, GLuint  in_uv, GLuint  in_layerIndex) {
+        x = in_x;
+        y = in_y; 
+        z = in_z;
+        normals = in_normals;
+        uv = in_uv;
+        layerIndex = in_layerIndex;
+        paddings = 0;
+    }
 };
 
 

@@ -50,7 +50,6 @@ void Game::insertWorld(World* game) {
 }
 
 void Game::run() const {
-
     if (!_window)
         throw std::runtime_error("Window not initialized!");
 

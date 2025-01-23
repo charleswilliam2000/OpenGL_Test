@@ -13,6 +13,8 @@
 
 #include "PerlinNoise.hpp"
 
+GLenum glCheckError_(const char* file, int line);
+
 class WorldLighting {
 	using UniformsVEC3 = std::pair<const char*, glm::vec3>;
 	using Uniforms1F = std::pair<const char*, float>;
@@ -33,7 +35,7 @@ public:
 
 	void renderPointLights(const glm::mat4& cameraView, const glm::mat4& projectionMat)  const noexcept;
 
-	~WorldLighting() {
+	~WorldLighting() noexcept {
 		glDeleteVertexArrays(1, &pointLightBuffers.VAO);
 		glDeleteBuffers(1, &pointLightBuffers.VBO);
 		glDeleteBuffers(1, &pointLightBuffers.EBO);
