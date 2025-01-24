@@ -218,7 +218,7 @@ void World::generateChunks(size_t gridSize)
 			_indirect.modelMatrices.push_back(
 				glm::translate(
 					glm::mat4(1.0f),
-					glm::vec3(_chunks[chunkIndex].second.pos.x, _chunks[chunkIndex].second.pos.y, _chunks[chunkIndex].second.pos.y)
+					glm::vec3(_chunks[chunkIndex].second.pos.x, _chunks[chunkIndex].second.pos.y, _chunks[chunkIndex].second.pos.z)
 				)
 			);
 			vetexOffset += numVertices;
