@@ -84,7 +84,7 @@ void WorldLighting::renderPointLights(const glm::mat4& cameraView, const glm::ma
 		pointLightShader.setUniformMat4("projection", projectionMat);
 
 		glBindVertexArray(pointLightBuffers.VAO);
-		glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(pointLightBuffers.numIndices), GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, Shape_Indices::Cube, GL_UNSIGNED_INT, 0);
 	}
 }
 
@@ -197,18 +197,60 @@ void World::generateChunks(size_t gridSize)
 			}));
 	}
 
+	uint32_t vetexOffset = 0;
+	std::vector<Vertex> worldVertex; std::vector<uint32_t> worldIndex;
+
 	for (auto& future : meshFuture) {
 		const auto& threadResults = future.get();
 		for (const auto& [chunkIndex, chunkData] : threadResults) {
 
-			_chunks[chunkIndex].second.chunkData = BufferObjects(
-				chunkData.chunk_vertices,
-				Attributes_Details::objectAttributes,
-				chunkData.chunk_indices
-			);
+			auto numVertices	= static_cast<uint32_t>(chunkData.chunk_vertices.size());
+			auto numIndices		= static_cast<uint32_t>(chunkData.chunk_indices.size());
 
+			_worldVerticesIndices.first += numVertices; _worldVerticesIndices.second += numIndices;
+			_chunks[chunkIndex].second.numVerticesIndices = std::make_pair(numVertices, numIndices);
+
+			worldVertex.insert(worldVertex.end(), chunkData.chunk_vertices.begin(), chunkData.chunk_vertices.end());
+			std::transform(chunkData.chunk_indices.begin(), chunkData.chunk_indices.end(), std::back_inserter(worldIndex), [&](uint32_t index) {
+				return index + vetexOffset;
+				});
+
+			_indirect.modelMatrices.push_back(
+				glm::translate(
+					glm::mat4(1.0f),
+					glm::vec3(_chunks[chunkIndex].second.pos.x, _chunks[chunkIndex].second.pos.y, _chunks[chunkIndex].second.pos.y)
+				)
+			);
+			vetexOffset += numVertices;
 		}
 	}
+
+	glGenBuffers(1, &_indirect.modelUniformBuffer);
+	glBindBuffer(GL_UNIFORM_BUFFER, _indirect.modelUniformBuffer);
+	glBufferData(GL_UNIFORM_BUFFER, _indirect.modelMatrices.size() * sizeof(glm::mat4), _indirect.modelMatrices.data(), GL_STATIC_DRAW);
+
+	_worldBuffers = BufferObjects(
+		worldVertex,
+		Attributes_Details::objectAttributes,
+		worldIndex
+	);
+
+	uint32_t firstIndexOffset = 0;
+	for (const auto& [chunkTerrain, chunkMesh] : _chunks) {
+		_indirect.drawCommands.emplace_back(
+			static_cast<uint32_t>(chunkMesh.numVerticesIndices.second), //Counts
+			1,															// Instance count
+			firstIndexOffset,											// firstIndex (Index offset after the last chunk)
+			0,															// Base vertex (Should be 0 because we are using 0 big VBO containing all vertices of the chunks)
+			0															// Base instance (No instancing)
+		);
+		firstIndexOffset += static_cast<uint32_t>(chunkMesh.numVerticesIndices.second);
+	}
+
+	glGenBuffers(1, &_indirect.indirectBuffer);
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, _indirect.indirectBuffer);
+	glBufferData(GL_DRAW_INDIRECT_BUFFER, _indirect.drawCommands.size() * sizeof(IndirectRendering::DrawCommands), _indirect.drawCommands.data(), GL_STATIC_DRAW);
+
 }
 
 void World::render(const Camera& camera, bool wireframeMode) const {
@@ -238,16 +280,10 @@ void World::render(const Camera& camera, bool wireframeMode) const {
 	_worldShader.setUniformMat4("projection", mvp_World.projection);
 	_worldShader.setUniformMat4("view", mvp_World.view);
 
-	for (const auto& chunk : _chunks) {
-		_worldShader.setUniformMat4(
-			"model",
-			glm::translate(
-				mvp_World.model,
-				glm::vec3(chunk.second.pos.x, chunk.second.pos.y, chunk.second.pos.z)
-			)
-		);
-		glBindVertexArray(chunk.second.chunkData.VAO);
-		glDrawElements(GL_TRIANGLES, chunk.second.chunkData.numIndices, GL_UNSIGNED_INT, 0);
-	}
+	GLuint transformBlockIndex = glGetUniformBlockIndex(_worldShader._shaderProgram, "ModelMatrices");
+	glBindBufferBase(GL_UNIFORM_BUFFER, transformBlockIndex, _indirect.modelUniformBuffer);
+	glBindVertexArray(_worldBuffers.VAO);
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, _indirect.indirectBuffer);
+	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, _chunks.size(), 0);
 	_worldLighting->renderPointLights(mvp_World.view, mvp_World.projection);
 }

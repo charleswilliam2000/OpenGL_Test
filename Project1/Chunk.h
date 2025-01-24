@@ -158,6 +158,7 @@ struct WorldChunk {
 };
 
 struct ChunkMesh {
+	std::pair<uint32_t, uint32_t> numVerticesIndices = { 0, 0 };
 	BufferObjects chunkData{};
 	float_VEC pos{};
 

@@ -1,12 +1,16 @@
 #version 460 core
 layout (location = 0) in uint aPacked; 
 
+#define MAX_CHUNKS 100
+layout(std140, binding = 0) uniform ModelMatrices {
+    mat4 modelMatrices[MAX_CHUNKS];
+};
+
 out vec3 FragPos;
 out vec3 Normal;
 out vec2 TextureCoords;
 out float layerIndex;
 
-uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
@@ -20,6 +24,8 @@ const vec3 normalsArr[6] = vec3[](
 );
 
 void main() {	
+    mat4 model = modelMatrices[gl_DrawID]; 
+
     //Unpack coordinates (5 bits each)
     int coord_mask = 31; // Binary: 11111
     float x = float((aPacked >> 0) & coord_mask);

@@ -14,7 +14,6 @@ BufferObjects::BufferObjects(
     const std::vector<Vertex>& vertex, 
     const std::array<VertexAttributes, Attributes_Details::num_objectAttributes>& attributes, 
     const std::vector<uint32_t>& indices)
-    : numVertices(vertex.size()), numIndices(indices.size())
 {
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
