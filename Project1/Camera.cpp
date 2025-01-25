@@ -1,7 +1,7 @@
 #include "Camera.h"
 void Camera::updateCameraVECs()
 {
-    glm::vec3 front;
+    float_VEC front = { 0.0f, 0.0f, 0.0f };
     front.x = cos(glm::radians(_yaw)) * cos(glm::radians(_pitch));
     front.y = sin(glm::radians(_pitch));
     front.z = sin(glm::radians(_yaw)) * cos(glm::radians(_pitch));
@@ -15,8 +15,19 @@ Camera::Camera(CameraVECs in_CameraVECs) : _vectors(in_CameraVECs), _worldUp(in_
     updateCameraVECs();
 }
 
-glm::vec3 Camera::getPosition() const {
-    return _vectors.cameraPos;
+float_VEC Camera::getVector(const CameraVectors& vec) const {
+    switch (vec) {
+    case CameraVectors::POS:
+        return _vectors.cameraPos;
+    case CameraVectors::FRONT:
+        return _vectors.cameraFront;
+    case CameraVectors::UP:
+        return _vectors.cameraUp;
+    case CameraVectors::RIGHT:
+        return _right;
+    default:
+        throw std::runtime_error("\nUnable to deduce camera vector");
+    }
 }
 
 void Camera::updateFrame() {

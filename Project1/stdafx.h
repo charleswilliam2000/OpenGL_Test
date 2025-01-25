@@ -11,6 +11,8 @@
 
 //Standard libraries
 #include <iostream>
+#include <array>
+#include <vector>
 #include <chrono>
 
 //My libraries

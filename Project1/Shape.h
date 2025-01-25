@@ -43,6 +43,77 @@ struct Vertex {
     }
 };
 
+struct Face_Data {
+    std::array<uint32_t, 6> indices;
+    std::array<Vertex, 4> vertices;
+    FACES face;
+};
+
+constexpr std::array<Face_Data, 6> FACE_DATA = {
+    {
+        {
+            { 0, 2, 1, 0, 3, 2 },
+            { //12 in binary: 1100
+                Vertex(0, 0, 1, 0, 2, 0),
+                Vertex(0, 1, 1, 0, 3, 0),
+                Vertex(0, 1, 0, 0, 0, 0),
+                Vertex(0, 0, 0, 0, 1, 0)
+            },
+            {FACES::WEST},
+        },
+        {
+            {0, 2, 1, 0, 3, 2},
+            { //10 in binary: 1010
+                Vertex(0, 0, 1, 1, 1, 0),
+                Vertex(0, 0, 0, 1, 0, 0),
+                Vertex(1, 0, 0, 1, 2, 0),
+                Vertex(1, 0, 1, 1, 3, 0)
+            },
+            {FACES::BOTTOM},
+        },
+        {
+            {0, 2, 1, 0, 3, 2},
+            { //9 in binary: 1001
+                Vertex(0, 0, 0, 2, 1, 0),
+                Vertex(0, 1, 0, 2, 0, 0),
+                Vertex(1, 1, 0, 2, 2, 0),
+                Vertex(1, 0, 0, 2, 3, 0)
+            },
+            {FACES::NORTH},
+        },
+        {
+            {0, 2, 1, 0, 3, 2},
+            {
+                Vertex(1, 0, 1, 3, 1, 0),
+                Vertex(1, 0, 0, 3, 3, 0),
+                Vertex(1, 1, 0, 3, 2, 0),
+                Vertex(1, 1, 1, 3, 0, 0)
+            },
+            {FACES::EAST},
+        },
+        {
+            {0, 2, 1, 0, 3, 2},
+            {
+                Vertex(0, 1, 1, 4, 0, 0),
+                Vertex(1, 1, 1, 4, 2, 0),
+                Vertex(1, 1, 0, 4, 3, 0),
+                Vertex(0, 1, 0, 4, 1, 0)
+            },
+            {FACES::TOP},
+        },
+        {
+            {0, 2, 1, 0, 3, 2},
+            {
+                Vertex(0, 0, 1, 5, 1, 0),
+                Vertex(1, 0, 1, 5, 3, 0),
+                Vertex(1, 1, 1, 5, 2, 0),
+                Vertex(0, 1, 1, 5, 0, 0)
+            },
+            {FACES::SOUTH},
+        }
+    }
+};
+
 
 namespace Shapes {
     constexpr std::array<float, Vertex_Data::Triangle> triangle_vertices = {

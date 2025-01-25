@@ -14,10 +14,17 @@ struct FrameValues {
 	float lastFrame{};
 };
 
+enum class CameraVectors : uint8_t {
+	POS = 0,
+	FRONT = 1,
+	UP = 2,
+	RIGHT = 3
+};
+
 struct CameraVECs {
-	glm::vec3 cameraPos{};
-	glm::vec3 cameraFront{};
-	glm::vec3 cameraUp{};
+	float_VEC cameraPos{};
+	float_VEC cameraFront{};
+	float_VEC cameraUp{};
 };
 
 class Camera {
@@ -27,8 +34,8 @@ private:
 	CameraVECs _vectors{};
 	FrameValues _frame{};
 	
-	glm::vec3 _right{};
-	glm::vec3 _worldUp{};
+	float_VEC _right{};
+	float_VEC _worldUp{};
 
 	void updateCameraVECs();
 
@@ -36,7 +43,7 @@ public:
 	Camera() {}
 	Camera(CameraVECs in_CameraVECs);
 
-	glm::vec3 getPosition() const;
+	float_VEC getVector(const CameraVectors& vec) const;
 
 	void updateFrame();
 	glm::mat4 updateCameraView() const;

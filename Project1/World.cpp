@@ -106,7 +106,10 @@ void World::generateTerrain(const siv::PerlinNoise& perlin, WorldChunk::Blocks& 
 			_ASSERT_EXPR(height < Chunk_Constants::Dimension_1DSize, "\nHeight higher than chunk's dimension");
 
 			for (uint8_t y = 0; y < height; y++) {
-				chunkTerrain[y][z].setID(BLOCK_ID::DIRT, x);
+				if (y < height - 1)
+					chunkTerrain[y][z].setID(BLOCK_ID::DIRT, x);
+				else if (y == height - 1)
+					chunkTerrain[y][z].setID(BLOCK_ID::GRASS, x);
 			}
 		}
 	}
@@ -121,7 +124,8 @@ void World::generateChunks(size_t gridSize)
 	const siv::PerlinNoise::seed_type seed = 123456u;
 	const siv::PerlinNoise perlin{ seed };
 
-	_chunks.resize(gridSize * gridSize);
+	_worldChunks.resize(gridSize * gridSize);
+	_chunkMeshes.resize(gridSize * gridSize);
 
 	constexpr std::array<std::pair<FACES, int32_VEC>, 4> neighborOffsets = { {
 		{FACES::WEST,	{-1, 0, 0}},
@@ -153,7 +157,7 @@ void World::generateChunks(size_t gridSize)
 					static_cast<float>(z) * 16.0f
 				};
 
-				generateTerrain(perlin, _chunks[i].first.blocks, chunkOffset);
+				generateTerrain(perlin, _worldChunks[i].blocks, chunkOffset);
 
 				for (const auto& neighbor : neighborOffsets) {
 					int neighborX = static_cast<int>(x) + neighbor.second.x;
@@ -162,7 +166,7 @@ void World::generateChunks(size_t gridSize)
 					if (neighborX >= 0 && neighborX < static_cast<int>(gridSize) &&
 						neighborZ >= 0 && neighborZ < static_cast<int>(gridSize)) {
 						size_t neighborIndex = neighborZ * gridSize + neighborX;
-						_chunks[i].first.neighborChunks.neighbors[static_cast<int>(neighbor.first)] = &_chunks[neighborIndex].first;
+						_worldChunks[i].neighborChunks.neighbors[static_cast<int>(neighbor.first)] = &_worldChunks[neighborIndex];
 					}
 				}
 			}
@@ -190,7 +194,7 @@ void World::generateChunks(size_t gridSize)
 					static_cast<float>(z) * 16.0f
 				};
 
-				threadResults.emplace_back(i, _chunks[i].second.generate(chunkOffset, _chunks[i].first));
+				threadResults.emplace_back(i, _chunkMeshes[i].generate(chunkOffset, _worldChunks[i]));
 			}
 
 			return threadResults;
@@ -208,7 +212,7 @@ void World::generateChunks(size_t gridSize)
 			auto numIndices		= static_cast<uint32_t>(chunkData.chunk_indices.size());
 
 			_worldVerticesIndices.first += numVertices; _worldVerticesIndices.second += numIndices;
-			_chunks[chunkIndex].second.numVerticesIndices = std::make_pair(numVertices, numIndices);
+			_chunkMeshes[chunkIndex].numVerticesIndices = std::make_pair(numVertices, numIndices);
 
 			worldVertex.insert(worldVertex.end(), chunkData.chunk_vertices.begin(), chunkData.chunk_vertices.end());
 			std::transform(chunkData.chunk_indices.begin(), chunkData.chunk_indices.end(), std::back_inserter(worldIndex), [&](uint32_t index) {
@@ -218,7 +222,7 @@ void World::generateChunks(size_t gridSize)
 			_indirect.modelMatrices.push_back(
 				glm::translate(
 					glm::mat4(1.0f),
-					glm::vec3(_chunks[chunkIndex].second.pos.x, _chunks[chunkIndex].second.pos.y, _chunks[chunkIndex].second.pos.z)
+					glm::vec3(_chunkMeshes[chunkIndex].pos)
 				)
 			);
 			vetexOffset += numVertices;
@@ -236,7 +240,7 @@ void World::generateChunks(size_t gridSize)
 	);
 
 	uint32_t firstIndexOffset = 0;
-	for (const auto& [chunkTerrain, chunkMesh] : _chunks) {
+	for (const auto& chunkMesh : _chunkMeshes) {
 		_indirect.drawCommands.emplace_back(
 			static_cast<uint32_t>(chunkMesh.numVerticesIndices.second), //Counts
 			1,															// Instance count
@@ -271,7 +275,7 @@ void World::render(const Camera& camera, bool wireframeMode) const {
 	else {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		_worldShader.useShaderProgram();
-		_worldShader.setUniformVec3("cameraPos", camera.getPosition());
+		_worldShader.setUniformVec3("cameraPos", camera.getVector(CameraVectors::POS));
 		_worldLighting->setDirectionalLightUniform(_worldShader);
 		_worldLighting->setPointLightsUniform(_worldShader);
 	}
@@ -284,6 +288,6 @@ void World::render(const Camera& camera, bool wireframeMode) const {
 	glBindBufferBase(GL_UNIFORM_BUFFER, transformBlockIndex, _indirect.modelUniformBuffer);
 	glBindVertexArray(_worldBuffers.VAO);
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, _indirect.indirectBuffer);
-	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, _chunks.size(), 0);
+	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, _chunkMeshes.size(), 0);
 	_worldLighting->renderPointLights(mvp_World.view, mvp_World.projection);
 }

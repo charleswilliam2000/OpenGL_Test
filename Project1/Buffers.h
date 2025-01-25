@@ -4,9 +4,6 @@
 #include "stdafx.h"
 #include "Shape.h"
 
-#include <array> 
-#include <vector>
-
 struct VertexAttributes {
     GLuint index{};
     GLint componentCount{};

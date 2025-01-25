@@ -3,6 +3,10 @@
 
 #include <iostream>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 enum class FACES : uint32_t {
 	WEST = 0,
 	BOTTOM = 1,
@@ -51,16 +55,6 @@ struct uint32_VEC {
 	}
 };
 
-struct float_VEC {
-	float x = 0.0f, y = 0.0f, z = 0.0f;
-
-	float_VEC() {}
-	template<typename _type>
-	float_VEC(_type x, _type y, _type z) : x(static_cast<float>(x)), y(static_cast<float>(y)), z(static_cast<float>(z)) {};
-	float_VEC getAdjacentCoordinate(const FACES& face) const;
-};
-
-
-
+using float_VEC = glm::vec3;
 
 #endif

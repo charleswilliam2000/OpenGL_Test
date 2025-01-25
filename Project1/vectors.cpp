@@ -14,22 +14,6 @@ uint32_VEC uint32_VEC::getAdjacentCoordinate(const FACES& face) const
 	throw std::runtime_error("\nFace not recognized!");
 }
 
-
-float_VEC float_VEC::getAdjacentCoordinate(const FACES& face) const
-{
-	switch (face) {
-	case FACES::NORTH:		return { x, y, z - 1.0f };
-	case FACES::SOUTH:		return { x, y, z + 1.0f };
-	case FACES::EAST:		return { x + 1.0f, y, z };
-	case FACES::WEST:		return { x - 1.0f, y, z };
-	case FACES::TOP:		return { x, y + 1.0f, z };
-	case FACES::BOTTOM:		return { x, y - 1.0f, z };
-
-	}
-	std::cerr << "\nUnable to determine face!";
-	throw std::runtime_error("\nFace not recognized!");
-}
-
 uint8_VEC uint8_VEC::getAdjacentCoordinate(const FACES& face) const
 {
 	switch (face) {

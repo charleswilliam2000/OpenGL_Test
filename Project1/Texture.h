@@ -1,11 +1,10 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
-#include <vector>
-#include <algorithm>
-
 #include "stdafx.h"
 #include "stb_image.h"
+
+#include <algorithm>
 
 struct Texture_Configs {
 	unsigned char* _data{};

@@ -1,13 +1,11 @@
 #ifndef WORLD_H
 #define WORLD_H
 
-#include <iostream>
 #include <thread>
 #include <future>
 
 #include "Chunk.h"
 
-#include "Camera.h"
 #include "Shader.h"
 #include "Texture.h"
 
@@ -55,12 +53,13 @@ struct IndirectRendering {
 };
 
 class World {
-	using Chunks = std::vector<std::pair<WorldChunk, ChunkMesh>>;
+	using WorldChunks = std::vector<WorldChunk>;
+	using ChunkMeshes = std::vector<ChunkMesh>;
 private:
 	void generateTerrain(const siv::PerlinNoise& perlin, WorldChunk::Blocks& chunkTerrain, const float_VEC& chunkOffset) const;
 	IndirectRendering _indirect;
-	Chunks _chunks{};
-
+	WorldChunks _worldChunks{};
+	ChunkMeshes _chunkMeshes{};
 	WorldLighting* _worldLighting{};
 	std::pair<uint32_t, uint32_t> _worldVerticesIndices = { 0, 0 };
 
@@ -74,11 +73,13 @@ public:
 	void render(const Camera& camera, bool wireframeMode) const;
 
 	~World() noexcept {
-		for (const auto& chunk : _chunks) {
-			glDeleteVertexArrays(1, &chunk.second.chunkData.VAO);
-			glDeleteBuffers(1, &chunk.second.chunkData.VBO);
-			glDeleteBuffers(1, &chunk.second.chunkData.EBO);
+		for (const auto& chunkMesh : _chunkMeshes) {
+			glDeleteVertexArrays(1, &chunkMesh.chunkData.VAO);
+			glDeleteBuffers(1, &chunkMesh.chunkData.VBO);
+			glDeleteBuffers(1, &chunkMesh.chunkData.EBO);
 		}
+		glDeleteBuffers(1, &_indirect.indirectBuffer);
+		glDeleteBuffers(1, &_indirect.modelUniformBuffer);
 		glDeleteProgram(_worldShader._shaderProgram);
 	}
 };
