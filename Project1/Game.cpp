@@ -56,14 +56,16 @@ void Game::run() const {
     if (!_camera)
         throw std::runtime_error("Camera not initialized!");
     
+    Frustum cameraFrustum;
     while (!glfwWindowShouldClose(_window)) {
         _camera->updateFrame();
         _camera->handleCameraMovement(_window);
+        cameraFrustum.createFrustumFromCamera(*_camera);
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        _world->render(*_camera, wireframeMode);
+        _world->render(*_camera, cameraFrustum, wireframeMode);
             
         glfwSwapBuffers(_window);
         glfwPollEvents();

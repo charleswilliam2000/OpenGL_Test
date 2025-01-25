@@ -49,6 +49,12 @@ public:
 	glm::mat4 updateCameraView() const;
 	void handleCameraMovement(GLFWwindow* window);
 	void handleMouseMovement(float xOffset, float yOffset, GLboolean constrainPitch = true);
+
+
+	const float aspect = 16.0f / 9.0f;
+	const float fovY = glm::radians(60.0f);
+	const float zNear = 0.1f;
+	const float zFar = 100.0f;
 };
 
 

@@ -70,7 +70,7 @@ public:
 	World() {}
 	World(WorldLighting* worldLighting, ShaderProgram worldShader, Texture textureAtlas);
 	void generateChunks(size_t numChunks);
-	void render(const Camera& camera, bool wireframeMode) const;
+	void render(const Camera& camera, const Frustum& cameraFrustum, bool wireframeMode);
 
 	~World() noexcept {
 		for (const auto& chunkMesh : _chunkMeshes) {

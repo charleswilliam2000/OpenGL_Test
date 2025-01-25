@@ -257,17 +257,16 @@ void World::generateChunks(size_t gridSize)
 
 }
 
-void World::render(const Camera& camera, bool wireframeMode) const {
-	struct MVP {
+void World::render(const Camera& camera, const Frustum& cameraFrustum, bool wireframeMode) {
+	struct VP {
 		glm::mat4
-			model = glm::mat4(1.0f),
 			view = glm::mat4(1.0f),
 			projection = glm::mat4(1.0f);
-	} mvp_World;
+	} vp_World;
 
 	uint32_t lastTexture = 0;
-	mvp_World.projection = glm::perspective(glm::radians(45.0f), (float)Constants::WINDOW_WIDTH / (float)Constants::WINDOW_HEIGHT, 0.1f, 100.0f);
-	mvp_World.view = camera.updateCameraView();
+	vp_World.projection = glm::perspective(glm::radians(45.0f), (float)Constants::WINDOW_WIDTH / (float)Constants::WINDOW_HEIGHT, 0.1f, 100.0f);
+	vp_World.view = camera.updateCameraView();
 
 	if (wireframeMode) {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -281,13 +280,24 @@ void World::render(const Camera& camera, bool wireframeMode) const {
 	}
 	Texture_Methods::activateTexture(_textureAtlas._textureID, GL_TEXTURE0);
 
-	_worldShader.setUniformMat4("projection", mvp_World.projection);
-	_worldShader.setUniformMat4("view", mvp_World.view);
+	_worldShader.setUniformMat4("projection", vp_World.projection);
+	_worldShader.setUniformMat4("view", vp_World.view);
 
 	GLuint transformBlockIndex = glGetUniformBlockIndex(_worldShader._shaderProgram, "ModelMatrices");
 	glBindBufferBase(GL_UNIFORM_BUFFER, transformBlockIndex, _indirect.modelUniformBuffer);
+
+	const size_t numChunks = _chunkMeshes.size();
+	for (size_t i = 0; i < numChunks; i++) {
+		AABB chunkAABB = _chunkMeshes[i].getBoundingBox();
+		if (chunkAABB.isOutsideFrustum(cameraFrustum)) {
+			_indirect.drawCommands[i].instanceCount = 0; // This is where mutable happens
+		}
+		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, _indirect.indirectBuffer);
+		glBufferSubData(GL_DRAW_INDIRECT_BUFFER, 0, _indirect.drawCommands.size() * sizeof(IndirectRendering::DrawCommands), _indirect.drawCommands.data());
+	}
+
 	glBindVertexArray(_worldBuffers.VAO);
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, _indirect.indirectBuffer);
 	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, _chunkMeshes.size(), 0);
-	_worldLighting->renderPointLights(mvp_World.view, mvp_World.projection);
+	_worldLighting->renderPointLights(vp_World.view, vp_World.projection);
 }

@@ -60,6 +60,8 @@ struct Block_ID {
 struct WorldChunk {
 	using Blocks = std::array<std::array<Block_ID, Chunk_Constants::Dimension_1DSize>, Chunk_Constants::Dimension_1DSize>;
 
+	Blocks blocks{};
+
 	struct NeighborChunks {
 		std::array<WorldChunk*, 6> neighbors;
 
@@ -68,8 +70,6 @@ struct WorldChunk {
 		}
 		//Six neighbors WEST / BOTTOM / NORTH / EAST / TOP / SOUTH
 	} neighborChunks;
-
-	Blocks blocks{};
 
 	bool isBlockSolid(uint8_t x, uint8_t y, uint8_t z) const {
 		return blocks[y][z].getID(x) != BLOCK_ID::AIR;
@@ -84,13 +84,20 @@ struct WorldChunk {
 };
 
 struct ChunkMesh {
-	std::pair<uint32_t, uint32_t> numVerticesIndices = { 0, 0 };
 	BufferObjects chunkData{};
 	float_VEC pos{};
+	std::pair<uint32_t, uint32_t> numVerticesIndices = { 0, 0 };
 
 	ChunkMesh() {}
+
 	void addFace(Chunk_Data& data, const uint8_VEC& blockWorldPos, const Face_Data& faceData, const BLOCK_ID& type, uint32_t& vertexOffset) const;
 	Chunk_Data generate(float_VEC in_pos, const WorldChunk& worldChunk);
+	AABB getBoundingBox() const {
+		float_VEC worldMin = float_VEC(pos.x + Chunk_Constants::Dimension_1DSize, pos.y + Chunk_Constants::Dimension_1DSize, pos.z + Chunk_Constants::Dimension_1DSize);
+		float_VEC worldMax = worldMin + float_VEC(static_cast<float>(Chunk_Constants::Dimension_1DSize));
+
+		return { worldMin, worldMax };
+	}
 };
 
 

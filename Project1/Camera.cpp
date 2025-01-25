@@ -10,7 +10,8 @@ void Camera::updateCameraVECs()
     _right                  = glm::normalize(glm::cross(_vectors.cameraFront, _worldUp));
     _vectors.cameraUp       = glm::normalize(glm::cross(_right, _vectors.cameraFront));
 }
-Camera::Camera(CameraVECs in_CameraVECs) : _vectors(in_CameraVECs), _worldUp(in_CameraVECs.cameraUp), _frame({ 0.0f, 0.0f })
+Camera::Camera(CameraVECs in_CameraVECs) 
+    : _vectors(in_CameraVECs), _worldUp(in_CameraVECs.cameraUp), _frame({ 0.0f, 0.0f })
 {
     updateCameraVECs();
 }
