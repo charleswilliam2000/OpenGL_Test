@@ -51,8 +51,8 @@ public:
 	void handleMouseMovement(float xOffset, float yOffset, GLboolean constrainPitch = true);
 
 
-	const float aspect = 16.0f / 9.0f;
-	const float fovY = glm::radians(60.0f);
+	const float aspect = static_cast<float>(Constants::WINDOW_WIDTH) / static_cast<float>(Constants::WINDOW_HEIGHT);
+	const float fovY = glm::radians(45.0f);
 	const float zNear = 0.1f;
 	const float zFar = 100.0f;
 };

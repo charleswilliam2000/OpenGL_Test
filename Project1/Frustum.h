@@ -8,6 +8,10 @@ struct Plane {
 	float_VEC normal = { 0.0f, 0.0f, 0.0f }; // Default normal for each plane
 	float distance = 0.0f; // This is the distance of each plane to a given object 
 
+	float distanceToPlane(const float_VEC& point) const {
+		return glm::dot(normal, point) - distance;
+	}
+
 	float distanceToPoint(const float_VEC& point) const {
 		return glm::dot(normal, point) + distance;
 	}
@@ -18,13 +22,11 @@ struct Frustum {
 };
 struct AABB {
 	float_VEC
-		center	= { 0.0f, 0.0f, 0.0f },
 		min		= { 0.0f, 0.0f, 0.0f },
 		max		= { 0.0f, 0.0f, 0.0f };
-	float radius = 0.0f;
 
 	AABB(float_VEC min, float_VEC max) 
-		: min(min), max(max), center((min + max) * 0.5f), radius((max.x - min.x) * 0.5f) {} //Radius assumes a uniform cube size, thus x = y = z
+		: min(min), max(max) {} //Radius assumes a uniform cube size, thus x = y = z
 
 	bool intersects(const AABB& other) const {
 		return (
@@ -36,11 +38,21 @@ struct AABB {
 
 	bool isOutsideFrustum(const Frustum& cameraFrustum) const {
 		for (const auto& frustumFace : cameraFrustum.frustumFaces) {
-			float signedDistance = frustumFace.distanceToPoint(center);
-			if (signedDistance + radius > 0.0f)
-				return true;
+			bool allOutside = true;
+			for (int i = 0; i < 8; i++) {
+				float_VEC corner = float_VEC(
+					(i & 1) ? max.x : min.x,
+					(i & 2) ? max.y : min.y,
+					(i & 4) ? max.z : min.z
+				);
+				if (frustumFace.distanceToPoint(corner) >= 0.0f) {
+					allOutside = false;
+					break;
+				}
+			}
+			if (allOutside) return true; 
 		}
-		return false;
+		return false; 
 	}
 };
 

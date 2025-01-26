@@ -93,7 +93,7 @@ struct ChunkMesh {
 	void addFace(Chunk_Data& data, const uint8_VEC& blockWorldPos, const Face_Data& faceData, const BLOCK_ID& type, uint32_t& vertexOffset) const;
 	Chunk_Data generate(float_VEC in_pos, const WorldChunk& worldChunk);
 	AABB getBoundingBox() const {
-		float_VEC worldMin = float_VEC(pos.x + Chunk_Constants::Dimension_1DSize, pos.y + Chunk_Constants::Dimension_1DSize, pos.z + Chunk_Constants::Dimension_1DSize);
+		float_VEC worldMin = pos;
 		float_VEC worldMax = worldMin + float_VEC(static_cast<float>(Chunk_Constants::Dimension_1DSize));
 
 		return { worldMin, worldMax };

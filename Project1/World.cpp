@@ -93,8 +93,8 @@ void World::generateTerrain(const siv::PerlinNoise& perlin, WorldChunk::Blocks& 
 	const double frequencyX = 0.001 + chunkOffset.x * 0.00001;
 	const double frequencyZ = 0.001 + chunkOffset.z * 0.00001;
 
-	const double chunkOffsetX = static_cast<double>(chunkOffset.x);
-	const double chunkOffsetZ = static_cast<double>(chunkOffset.z);
+	const double chunkOffsetX = static_cast<double>(chunkOffset.x) * 2;
+	const double chunkOffsetZ = static_cast<double>(chunkOffset.z) * 2;
 
 	for (uint8_t z = 0; z < Chunk_Constants::Dimension_1DSize; z++) {
 		for (uint8_t x = 0; x < Chunk_Constants::Dimension_1DSize; x++) {
@@ -287,14 +287,18 @@ void World::render(const Camera& camera, const Frustum& cameraFrustum, bool wire
 	glBindBufferBase(GL_UNIFORM_BUFFER, transformBlockIndex, _indirect.modelUniformBuffer);
 
 	const size_t numChunks = _chunkMeshes.size();
+	size_t numChunksCulled = 0;
 	for (size_t i = 0; i < numChunks; i++) {
 		AABB chunkAABB = _chunkMeshes[i].getBoundingBox();
 		if (chunkAABB.isOutsideFrustum(cameraFrustum)) {
 			_indirect.drawCommands[i].instanceCount = 0; // This is where mutable happens
+			++numChunksCulled;
 		}
+		else _indirect.drawCommands[i].instanceCount = 1; 
 		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, _indirect.indirectBuffer);
 		glBufferSubData(GL_DRAW_INDIRECT_BUFFER, 0, _indirect.drawCommands.size() * sizeof(IndirectRendering::DrawCommands), _indirect.drawCommands.data());
 	}
+	//std::cout << "\nNum chunks obscured: [" << numChunksCulled << "]/[" << numChunks << "].";
 
 	glBindVertexArray(_worldBuffers.VAO);
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, _indirect.indirectBuffer);
