@@ -265,8 +265,24 @@ void World::generateChunks(size_t gridSize)
 
 	glGenBuffers(1, &_indirect.indirectBuffer);
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, _indirect.indirectBuffer);
-	glBufferData(GL_DRAW_INDIRECT_BUFFER, _indirect.drawCommands.size() * sizeof(IndirectRendering::DrawCommands), _indirect.drawCommands.data(), GL_STATIC_DRAW);
+	
+	glBufferStorage(GL_DRAW_INDIRECT_BUFFER, _indirect.drawCommands.size() * sizeof(IndirectRendering::DrawCommands), _indirect.drawCommands.data(),
+		GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
 
+	_indirect.indirectBufferPersistentPtr = 
+		static_cast<IndirectRendering::DrawCommands*>(
+			glMapBufferRange(
+				GL_DRAW_INDIRECT_BUFFER, 
+				0, 
+				_indirect.drawCommands.size() * sizeof(IndirectRendering::DrawCommands),
+				GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT
+			)
+		);
+
+	if (!_indirect.indirectBufferPersistentPtr)
+		throw std::runtime_error("\nUnable to initialize indirectBufferPersistentPtr");
+
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
 }
 
 void World::render(const Camera& camera, const Frustum& cameraFrustum, bool wireframeMode) {
@@ -276,9 +292,31 @@ void World::render(const Camera& camera, const Frustum& cameraFrustum, bool wire
 			projection = glm::mat4(1.0f);
 	} vp_World;
 
-	uint32_t lastTexture = 0;
 	vp_World.projection = glm::perspective(glm::radians(45.0f), (float)Constants::WINDOW_WIDTH / (float)Constants::WINDOW_HEIGHT, 0.1f, 100.0f);
 	vp_World.view = camera.updateCameraView();
+
+	static GLuint uboVP;
+	static void* vpPersistentPtr = nullptr;
+	static bool isuboVP_initialized = false;
+
+	if (!isuboVP_initialized) {
+		glGenBuffers(1, &uboVP);
+		glBindBuffer(GL_UNIFORM_BUFFER, uboVP);
+		glBufferStorage(GL_UNIFORM_BUFFER, sizeof(VP), nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+		glBindBufferBase(GL_UNIFORM_BUFFER, 1, uboVP);
+
+		vpPersistentPtr = glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(VP),
+			GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+		if (!vpPersistentPtr) throw std::runtime_error("Unable to initialize persistent_ptr!");
+
+		isuboVP_initialized = true;
+	}
+
+	glm::mat4* vp_Data = static_cast<glm::mat4*>(vpPersistentPtr);
+	vp_Data[0] = vp_World.projection;
+	vp_Data[1] = vp_World.view;
+
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	if (wireframeMode) {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -293,19 +331,16 @@ void World::render(const Camera& camera, const Frustum& cameraFrustum, bool wire
 	}
 	Texture_Methods::activateTexture(_textureAtlas._textureID, GL_TEXTURE0);
 
-	_worldShader.setUniformMat4("projection", vp_World.projection);
-	_worldShader.setUniformMat4("view", vp_World.view);
-
 	GLuint transformBlockIndex = glGetUniformBlockIndex(_worldShader._shaderProgram, "ModelMatrices");
+	GLuint vpBlockIndex = glGetUniformBlockIndex(_worldShader._shaderProgram, "VP_Matrices");
 	glBindBufferBase(GL_UNIFORM_BUFFER, transformBlockIndex, _indirect.modelUniformBuffer);
+	glBindBufferBase(GL_UNIFORM_BUFFER, vpBlockIndex, uboVP);
 
 	const size_t numChunks = _chunkMeshes.size();
 	for (size_t i = 0; i < numChunks; i++) {
 		AABB chunkAABB = _chunkMeshes[i].getBoundingBox();
-		_indirect.drawCommands[i].instanceCount = (chunkAABB.isOutsideFrustum(cameraFrustum)) ? 0 : 1;
+		_indirect.indirectBufferPersistentPtr[i].instanceCount = (chunkAABB.isOutsideFrustum(cameraFrustum)) ? 0 : 1;
 	}
-	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, _indirect.indirectBuffer);
-	glBufferSubData(GL_DRAW_INDIRECT_BUFFER, 0, _indirect.drawCommands.size() * sizeof(IndirectRendering::DrawCommands), _indirect.drawCommands.data());
 
 	glBindVertexArray(_worldBuffers.VAO);
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, _indirect.indirectBuffer);

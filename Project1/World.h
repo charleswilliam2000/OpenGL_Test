@@ -21,6 +21,7 @@ public:
 	WorldSkybox() {}
 	WorldSkybox(BufferObjects bufferObjects, const char* shaderVertexProgramName, const char* shaderFragmentProgramName);
 
+	//Force move operations only
 	WorldSkybox(const WorldSkybox&) = delete;
 	WorldSkybox& operator=(const WorldSkybox&) = delete;
 	WorldSkybox(WorldSkybox&&) noexcept = default;
@@ -66,6 +67,7 @@ struct IndirectRendering {
 			: count(count), instanceCount(instanceCount), firstIndex(firstIndex), baseVertex(baseVertex), baseInstance(baseInstance) { }
 	}; std::vector<DrawCommands> drawCommands;
 	std::vector<glm::mat4> modelMatrices;
+	IndirectRendering::DrawCommands* indirectBufferPersistentPtr = nullptr;
 	uint32_t indirectBuffer = 0, modelUniformBuffer = 0;
 };
 
@@ -99,6 +101,11 @@ public:
 	void render(const Camera& camera, const Frustum& cameraFrustum, bool wireframeMode);
 
 	~World() noexcept {
+		if (_indirect.indirectBufferPersistentPtr) {
+			glUnmapBuffer(_indirect.indirectBuffer);
+			_indirect.indirectBufferPersistentPtr = nullptr;
+		}
+
 		glDeleteBuffers(1, &_indirect.indirectBuffer);
 		glDeleteBuffers(1, &_indirect.modelUniformBuffer);
 		glDeleteProgram(_worldShader._shaderProgram);

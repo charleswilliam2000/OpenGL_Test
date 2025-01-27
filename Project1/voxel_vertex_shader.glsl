@@ -6,13 +6,15 @@ layout(std140, binding = 0) uniform ModelMatrices {
     mat4 modelMatrices[MAX_CHUNKS];
 };
 
+layout(std140, binding = 1) uniform VP_Matrices {
+    mat4 projectionMatrix;
+    mat4 viewMatrix;
+};
+
 out vec3 FragPos;
 out vec3 Normal;
 out vec2 TextureCoords;
 out float layerIndex;
-
-uniform mat4 view;
-uniform mat4 projection;
 
 const vec3 normalsArr[6] = vec3[](
     vec3(-1.0, 0.0, 0.0),
@@ -46,5 +48,5 @@ void main() {
     FragPos = vec3(model * vec4(aPos, 1.0));
     TextureCoords = vec2(u, v);
 
-  gl_Position = projection * view * model * vec4(aPos, 1.0);
+  gl_Position = projectionMatrix * viewMatrix * model * vec4(aPos, 1.0);
 }
