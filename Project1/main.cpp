@@ -31,7 +31,7 @@ int main() {
             }, 
             "light_vertex_shader.glsl", 
             "light_fragment_shader.glsl"
-        ); worldLight.addPointLight(glm::vec3(18.0f, 18.0f, 18.0f));
+        ); 
 
         WorldSkybox worldSkybox
         (
@@ -45,8 +45,8 @@ int main() {
         );
 
         World world(
-            &worldSkybox, 
-            &worldLight, 
+            std::move(worldSkybox), 
+            std::move(worldLight),
             ShaderProgram{"voxel_vertex_shader.glsl", "voxel_fragment_shader.glsl"}, 
             Texture{"TextureAtlas.jpg"}
         ); world.generateChunks(6);       

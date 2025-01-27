@@ -23,8 +23,15 @@ GLenum glCheckError_(const char* file, int line)
 }
 
 WorldSkybox::WorldSkybox(BufferObjects bufferObjects, const char* shaderVertexProgramName, const char* shaderFragmentProgramName)
-	: skyboxBuffers(std::move(bufferObjects)), skyboxShader(shaderVertexProgramName, shaderFragmentProgramName) { 
-	skyboxShader.setUniform1i("skybox", skybox._skyboxID);
+	: skyboxBuffers(std::move(bufferObjects)), skyboxShader(shaderVertexProgramName, shaderFragmentProgramName) { }
+
+void WorldSkybox::renderSkybox(const glm::mat4& cameraView, const glm::mat4& projection) const {
+	skyboxShader.useShaderProgram();
+	skyboxShader.setUniformMat4("view", cameraView);
+	skyboxShader.setUniformMat4("projection", projection);
+
+	glBindVertexArray(skyboxBuffers.VAO);
+	glDrawElements(GL_TRIANGLES, Shape_Indices::Cube, GL_UNSIGNED_INT, 0);
 }
 
 WorldLighting::WorldLighting(BufferObjects bufferObjects, const char* shaderVertexProgramName, const char* shaderFragmentProgramName)
@@ -39,7 +46,7 @@ void WorldLighting::addPointLights(WorldLighting::PointLightPositions&& pointLig
 	pointLightPositions = pointLightsPos;
 }
 
-void WorldLighting::setDirectionalLightUniform(const ShaderProgram& worldShaderProgram) const noexcept {
+void World::setDirectionalLightUniform() const {
 	std::array<UniformsVEC3, 4> directionalUniformsVEC3 = { 
 		{
 			{ "directional_light.direction",	glm::vec3(-0.2f, -1.0f, -0.3f)	},
@@ -50,16 +57,13 @@ void WorldLighting::setDirectionalLightUniform(const ShaderProgram& worldShaderP
 	};
 
 	for (const auto& dir : directionalUniformsVEC3)
-		worldShaderProgram.setUniformVec3(dir.first, dir.second);
+		_worldShader.setUniformVec3(dir.first, dir.second);
 }
 
-void WorldLighting::setPointLightsUniform(const ShaderProgram& worldShaderProgram) const {
-	if (pointLightPositions.empty())
-		throw std::runtime_error("\nThere are no point lights!");
-
+void World::setPointLightsUniform() const {
 	std::array<UniformsVEC3, 4> pointLightUniformsVEC3 = { 
 		{
-			{ "point_light[0].position",	pointLightPositions[0]		   },
+			{ "point_light[0].position",	glm::vec3(23.0f, 23.0f, 23.0f)},
 			{ "point_light[0].ambient",		glm::vec3(0.05f, 0.05f, 0.05f) },
 			{ "point_light[0].diffuse",		glm::vec3(0.8f, 0.8f, 0.8f)	   },
 			{ "point_light[0].specular",	glm::vec3(1.0f, 1.0f, 1.0f)	   }
@@ -67,7 +71,7 @@ void WorldLighting::setPointLightsUniform(const ShaderProgram& worldShaderProgra
 	};
 	
 	for (const auto& point : pointLightUniformsVEC3)
-		worldShaderProgram.setUniformVec3(point.first, point.second);
+		_worldShader.setUniformVec3(point.first, point.second);
 
 	std::array<Uniforms1F, 3> pointLightUniform1F = { 
 		{
@@ -78,15 +82,17 @@ void WorldLighting::setPointLightsUniform(const ShaderProgram& worldShaderProgra
 	};
 
 	for (const auto& point : pointLightUniform1F)
-		worldShaderProgram.setUniform1f(point.first, point.second);
+		_worldShader.setUniform1f(point.first, point.second);
 }
 
-void WorldLighting::renderPointLights(const glm::mat4& cameraView, const glm::mat4& projectionMat) const noexcept {
+void WorldLighting::renderPointLights(const glm::mat4& cameraView, const glm::mat4& projectionMat) const {
+	pointLightShader.useShaderProgram();
+	pointLightShader.setUniformMat4("view", cameraView);
+	pointLightShader.setUniformMat4("projection", projectionMat);
+
 	for (const auto& lightCoord : pointLightPositions) {
 		glm::mat4 lightSourceModel = glm::translate(glm::mat4(1.0f), lightCoord);
 		pointLightShader.setUniformMat4("model", lightSourceModel);
-		pointLightShader.setUniformMat4("view", cameraView);
-		pointLightShader.setUniformMat4("projection", projectionMat);
 
 		glBindVertexArray(pointLightBuffers.VAO);
 		glDrawElements(GL_TRIANGLES, Shape_Indices::Cube, GL_UNSIGNED_INT, 0);
@@ -120,8 +126,8 @@ void World::generateTerrain(const siv::PerlinNoise& perlin, WorldChunk::Blocks& 
 	}
 }
 
-World::World(WorldSkybox* worldSkybox, WorldLighting* worldLighting, ShaderProgram worldShader, Texture textureAtlas)
-	: _worldSkybox(worldSkybox), _worldLighting(worldLighting), _worldShader(worldShader), _textureAtlas(textureAtlas) {
+World::World(WorldSkybox worldSkybox, WorldLighting worldLighting, ShaderProgram worldShader, Texture textureAtlas)
+	: _worldSkybox(std::move(worldSkybox)), _worldLighting(std::move(worldLighting)), _worldShader(worldShader), _textureAtlas(textureAtlas) {
 	_worldShader.setUniform1i("myTextures", _textureAtlas._textureID);
 }
 
@@ -281,8 +287,9 @@ void World::render(const Camera& camera, const Frustum& cameraFrustum, bool wire
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		_worldShader.useShaderProgram();
 		_worldShader.setUniformVec3("cameraPos", camera.getVector(CameraVectors::POS));
-		_worldLighting->setDirectionalLightUniform(_worldShader);
-		_worldLighting->setPointLightsUniform(_worldShader);
+
+		setDirectionalLightUniform();
+		setPointLightsUniform();
 	}
 	Texture_Methods::activateTexture(_textureAtlas._textureID, GL_TEXTURE0);
 
@@ -303,5 +310,8 @@ void World::render(const Camera& camera, const Frustum& cameraFrustum, bool wire
 	glBindVertexArray(_worldBuffers.VAO);
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, _indirect.indirectBuffer);
 	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, _chunkMeshes.size(), 0);
-	_worldLighting->renderPointLights(vp_World.view, vp_World.projection);
+	glBindVertexArray(0);
+
+	_worldLighting.renderPointLights(vp_World.view, vp_World.projection);
+	_worldSkybox.renderSkybox(vp_World.view, vp_World.projection);
 }

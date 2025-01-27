@@ -16,16 +16,24 @@ GLenum glCheckError_(const char* file, int line);
 class WorldSkybox {
 private:
 	BufferObjects skyboxBuffers{};
-	Skybox skybox{};
 	ShaderProgram skyboxShader{};
 public:
 	WorldSkybox() {}
 	WorldSkybox(BufferObjects bufferObjects, const char* shaderVertexProgramName, const char* shaderFragmentProgramName);
+
+	WorldSkybox(const WorldSkybox&) = delete;
+	WorldSkybox& operator=(const WorldSkybox&) = delete;
+	WorldSkybox(WorldSkybox&&) noexcept = default;
+	WorldSkybox& operator=(WorldSkybox&&) noexcept = default;
+
+	void renderSkybox(const glm::mat4& cameraView, const glm::mat4& projection) const;
+
+	~WorldSkybox() noexcept {
+		glDeleteProgram(skyboxShader._shaderProgram);
+	}
 };
 
 class WorldLighting {
-	using UniformsVEC3 = std::pair<const char*, glm::vec3>;
-	using Uniforms1F = std::pair<const char*, float>;
 	using PointLightPositions = std::vector<glm::vec3>;
 private:
 	PointLightPositions pointLightPositions{};
@@ -35,20 +43,19 @@ public:
 	WorldLighting() {}
 	WorldLighting(BufferObjects bufferObjects, const char* shaderVertexProgramName, const char* shaderFragmentProgramName);
 
+	WorldLighting(const WorldLighting&) = delete; 
+	WorldLighting& operator=(const WorldLighting&) = delete;
+	WorldLighting(WorldLighting&&) noexcept = default;
+	WorldLighting& operator=(WorldLighting&&) noexcept = default; 
+
 	void addPointLight(const glm::vec3& pointLightPos);
 	void addPointLights(PointLightPositions&& pointLightsPos);
-
-	void setDirectionalLightUniform(const ShaderProgram& worldShaderProgram) const noexcept;
-	void setPointLightsUniform(const ShaderProgram& worldShaderProgram) const;
-
-	void renderPointLights(const glm::mat4& cameraView, const glm::mat4& projectionMat)  const noexcept;
+	void renderPointLights(const glm::mat4& cameraView, const glm::mat4& projectionMat)  const;
 
 	~WorldLighting() noexcept {
-		glDeleteVertexArrays(1, &pointLightBuffers.VAO);
-		glDeleteBuffers(1, &pointLightBuffers.VBO);
-		glDeleteBuffers(1, &pointLightBuffers.EBO);
 		glDeleteProgram(pointLightShader._shaderProgram);
 	}
+
 };
 
 struct IndirectRendering {
@@ -62,18 +69,23 @@ struct IndirectRendering {
 	uint32_t indirectBuffer = 0, modelUniformBuffer = 0;
 };
 
+using UniformsVEC3 = std::pair<const char*, glm::vec3>;
+using Uniforms1F = std::pair<const char*, float>;
+
 class World {
 	using WorldChunks = std::vector<WorldChunk>;
 	using ChunkMeshes = std::vector<ChunkMesh>;
 private:
+	void setDirectionalLightUniform() const;
+	void setPointLightsUniform() const;
 	void generateTerrain(const siv::PerlinNoise& perlin, WorldChunk::Blocks& chunkTerrain, const float_VEC& chunkOffset) const;
 	IndirectRendering _indirect;
 
 	WorldChunks _worldChunks{};
 	ChunkMeshes _chunkMeshes{};
 	
-	WorldSkybox* _worldSkybox = nullptr;
-	WorldLighting* _worldLighting = nullptr;
+	WorldSkybox _worldSkybox{};
+	WorldLighting _worldLighting{};
 
 	std::pair<uint32_t, uint32_t> _worldVerticesIndices = { 0, 0 };
 
@@ -82,16 +94,11 @@ private:
 	Texture _textureAtlas{};
 public:
 	World() {}
-	World(WorldSkybox* worldSkybox, WorldLighting* worldLighting, ShaderProgram worldShader, Texture textureAtlas);
+	World(WorldSkybox worldSkybox, WorldLighting worldLighting, ShaderProgram worldShader, Texture textureAtlas);
 	void generateChunks(size_t numChunks);
 	void render(const Camera& camera, const Frustum& cameraFrustum, bool wireframeMode);
 
 	~World() noexcept {
-		for (const auto& chunkMesh : _chunkMeshes) {
-			glDeleteVertexArrays(1, &chunkMesh.chunkData.VAO);
-			glDeleteBuffers(1, &chunkMesh.chunkData.VBO);
-			glDeleteBuffers(1, &chunkMesh.chunkData.EBO);
-		}
 		glDeleteBuffers(1, &_indirect.indirectBuffer);
 		glDeleteBuffers(1, &_indirect.modelUniformBuffer);
 		glDeleteProgram(_worldShader._shaderProgram);

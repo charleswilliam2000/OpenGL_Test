@@ -21,6 +21,7 @@ struct ShaderProgram {
 	void setUniform1f(const char* name, float value) const;
 	void setUniformVec3(const char* name, const glm::vec3& vector) const;
 	void setUniformMat4(const char* name, const glm::mat4& matrix) const;
+
 };
 
 #endif // SHADER_H
