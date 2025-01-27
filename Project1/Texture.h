@@ -6,13 +6,19 @@
 
 #include <algorithm>
 
-struct Texture_Configs {
+struct Img_Configs {
 	unsigned char* _data{};
 	int _width{}, _height{}, _num_channels{};
 };
 
+struct Skybox {
+	uint32_t _skyboxID = 0;
+
+	Skybox();
+};
+
 namespace Texture_Methods {
-	Texture_Configs loadTexture(const char* image_path);
+	Img_Configs loadTexture(const char* image_path);
 	void activateTexture(const uint32_t& textureID, GLenum textureUnit = GL_TEXTURE0);
 }
 
@@ -21,4 +27,5 @@ struct Texture {
 	Texture() {}
 	Texture(const char* image_path);
 };
+
 #endif

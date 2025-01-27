@@ -22,6 +22,11 @@ GLenum glCheckError_(const char* file, int line)
 
 }
 
+WorldSkybox::WorldSkybox(BufferObjects bufferObjects, const char* shaderVertexProgramName, const char* shaderFragmentProgramName)
+	: skyboxBuffers(std::move(bufferObjects)), skyboxShader(shaderVertexProgramName, shaderFragmentProgramName) { 
+	skyboxShader.setUniform1i("skybox", skybox._skyboxID);
+}
+
 WorldLighting::WorldLighting(BufferObjects bufferObjects, const char* shaderVertexProgramName, const char* shaderFragmentProgramName)
 	: pointLightBuffers(std::move(bufferObjects)), pointLightShader(ShaderProgram(shaderVertexProgramName, shaderFragmentProgramName)) {
 };
@@ -115,8 +120,9 @@ void World::generateTerrain(const siv::PerlinNoise& perlin, WorldChunk::Blocks& 
 	}
 }
 
-World::World(WorldLighting* worldLighting, ShaderProgram worldShader, Texture textureAtlas)
-	: _worldShader(worldShader), _worldLighting(worldLighting), _textureAtlas(textureAtlas) {
+World::World(WorldSkybox* worldSkybox, WorldLighting* worldLighting, ShaderProgram worldShader, Texture textureAtlas)
+	: _worldSkybox(worldSkybox), _worldLighting(worldLighting), _worldShader(worldShader), _textureAtlas(textureAtlas) {
+	_worldShader.setUniform1i("myTextures", _textureAtlas._textureID);
 }
 
 void World::generateChunks(size_t gridSize)
@@ -235,7 +241,7 @@ void World::generateChunks(size_t gridSize)
 
 	_worldBuffers = BufferObjects(
 		worldVertex,
-		Attributes_Details::objectAttributes,
+		Attributes_Details::voxelPackedAttributes,
 		worldIndex
 	);
 
@@ -287,18 +293,12 @@ void World::render(const Camera& camera, const Frustum& cameraFrustum, bool wire
 	glBindBufferBase(GL_UNIFORM_BUFFER, transformBlockIndex, _indirect.modelUniformBuffer);
 
 	const size_t numChunks = _chunkMeshes.size();
-	size_t numChunksCulled = 0;
 	for (size_t i = 0; i < numChunks; i++) {
 		AABB chunkAABB = _chunkMeshes[i].getBoundingBox();
-		if (chunkAABB.isOutsideFrustum(cameraFrustum)) {
-			_indirect.drawCommands[i].instanceCount = 0; // This is where mutable happens
-			++numChunksCulled;
-		}
-		else _indirect.drawCommands[i].instanceCount = 1; 
-		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, _indirect.indirectBuffer);
-		glBufferSubData(GL_DRAW_INDIRECT_BUFFER, 0, _indirect.drawCommands.size() * sizeof(IndirectRendering::DrawCommands), _indirect.drawCommands.data());
+		_indirect.drawCommands[i].instanceCount = (chunkAABB.isOutsideFrustum(cameraFrustum)) ? 0 : 1;
 	}
-	//std::cout << "\nNum chunks obscured: [" << numChunksCulled << "]/[" << numChunks << "].";
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, _indirect.indirectBuffer);
+	glBufferSubData(GL_DRAW_INDIRECT_BUFFER, 0, _indirect.drawCommands.size() * sizeof(IndirectRendering::DrawCommands), _indirect.drawCommands.data());
 
 	glBindVertexArray(_worldBuffers.VAO);
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, _indirect.indirectBuffer);

@@ -13,6 +13,16 @@
 
 GLenum glCheckError_(const char* file, int line);
 
+class WorldSkybox {
+private:
+	BufferObjects skyboxBuffers{};
+	Skybox skybox{};
+	ShaderProgram skyboxShader{};
+public:
+	WorldSkybox() {}
+	WorldSkybox(BufferObjects bufferObjects, const char* shaderVertexProgramName, const char* shaderFragmentProgramName);
+};
+
 class WorldLighting {
 	using UniformsVEC3 = std::pair<const char*, glm::vec3>;
 	using Uniforms1F = std::pair<const char*, float>;
@@ -58,9 +68,13 @@ class World {
 private:
 	void generateTerrain(const siv::PerlinNoise& perlin, WorldChunk::Blocks& chunkTerrain, const float_VEC& chunkOffset) const;
 	IndirectRendering _indirect;
+
 	WorldChunks _worldChunks{};
 	ChunkMeshes _chunkMeshes{};
-	WorldLighting* _worldLighting{};
+	
+	WorldSkybox* _worldSkybox = nullptr;
+	WorldLighting* _worldLighting = nullptr;
+
 	std::pair<uint32_t, uint32_t> _worldVerticesIndices = { 0, 0 };
 
 	BufferObjects _worldBuffers{};
@@ -68,7 +82,7 @@ private:
 	Texture _textureAtlas{};
 public:
 	World() {}
-	World(WorldLighting* worldLighting, ShaderProgram worldShader, Texture textureAtlas);
+	World(WorldSkybox* worldSkybox, WorldLighting* worldLighting, ShaderProgram worldShader, Texture textureAtlas);
 	void generateChunks(size_t numChunks);
 	void render(const Camera& camera, const Frustum& cameraFrustum, bool wireframeMode);
 

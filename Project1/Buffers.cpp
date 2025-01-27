@@ -1,18 +1,18 @@
 #include "Buffers.h"
 
 namespace Attributes_Details {
-    std::array<VertexAttributes, num_objectAttributes> objectAttributes = {
+    std::array<VertexAttributes, 1> voxelPackedAttributes = {
         VertexAttributes{0, 1, GL_UNSIGNED_INT,  GL_FALSE, sizeof(Vertex), (void*)0 },            
     };
 
-   std::array<VertexAttributes, 1> lightSourceAttributes = {
+   std::array<VertexAttributes, 1> voxelFloatAttributes = {
         VertexAttributes{0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0 }
     };
 }
 
 BufferObjects::BufferObjects(
     const std::vector<Vertex>& vertex, 
-    const std::array<VertexAttributes, Attributes_Details::num_objectAttributes>& attributes, 
+    const std::array<VertexAttributes, 1>& attributes, 
     const std::vector<uint32_t>& indices)
 {
     glGenVertexArrays(1, &VAO);

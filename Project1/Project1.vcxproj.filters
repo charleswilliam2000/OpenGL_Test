@@ -36,10 +36,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="object_vertex_shader.glsl">
+    <None Include="voxel_vertex_shader.glsl">
       <Filter>Source Files\Shaders</Filter>
     </None>
-    <None Include="object_fragment_shader.glsl">
+    <None Include="voxel_fragment_shader.glsl">
       <Filter>Source Files\Shaders</Filter>
     </None>
     <None Include="packages.config" />
@@ -55,6 +55,10 @@
     <None Include="wireframe_fragment_shader.glsl">
       <Filter>Source Files\Shaders</Filter>
     </None>
+    <None Include="skybox_vertex_shader.glsl">
+      <Filter>Source Files\Shaders</Filter>
+    </None>
+    <None Include="skybox_fragment_shader.glsl" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">

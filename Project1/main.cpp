@@ -22,28 +22,43 @@ int main() {
         glEnable(GL_CULL_FACE);
         glCullFace(GL_FRONT);
 
-        ShaderProgram worldShader("object_vertex_shader.glsl", "object_fragment_shader.glsl");
-        WorldLighting worldLight( 
-            { Shapes::base_cube_vertices, Attributes_Details::lightSourceAttributes, Shapes::cube_indices }, 
+        WorldLighting worldLight
+        ( 
+            { 
+                Shapes::base_cube_vertices, 
+                Attributes_Details::voxelFloatAttributes, 
+                Shapes::cube_indices 
+            }, 
             "light_vertex_shader.glsl", 
-            "light_fragment_shader.glsl");
-        worldLight.addPointLight(glm::vec3(18.0f, 18.0f, 18.0f));
+            "light_fragment_shader.glsl"
+        ); worldLight.addPointLight(glm::vec3(18.0f, 18.0f, 18.0f));
 
-        ShaderProgram wireframeShader("wireframe_vertex_shader.glsl", "wireframe_fragment_shader.glsl");
+        WorldSkybox worldSkybox
+        (
+            {
+                Shapes::base_cube_vertices,
+                Attributes_Details::voxelFloatAttributes,
+                Shapes::cube_indices
+            },
+            "skybox_vertex_shader.glsl",
+            "skybox_fragment_shader.glsl"
+        );
 
-        Texture texture("TextureAtlas.jpg");
-        worldShader.setUniform1i("myTextures", texture._textureID);
-
-        World world(&worldLight, worldShader, texture);
-        world.generateChunks(6);       
+        World world(
+            &worldSkybox, 
+            &worldLight, 
+            ShaderProgram{"voxel_vertex_shader.glsl", "voxel_fragment_shader.glsl"}, 
+            Texture{"TextureAtlas.jpg"}
+        ); world.generateChunks(6);       
                             //Pos                           //Front                     //Up
         Camera camera({ glm::vec3(20.0f, 20.0f, 20.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f) });
+        
         game.insertCamera(&camera);
         game.insertWorld(&world);
         game.run();
-        
+        glfwTerminate();
+
     }
     catch (const std::runtime_error& e) { std::cout << e.what(); }
-    glfwTerminate();
     return 0;
 }

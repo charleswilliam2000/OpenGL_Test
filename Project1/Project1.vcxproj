@@ -146,11 +146,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="object_fragment_shader.glsl" />
+    <None Include="voxel_fragment_shader.glsl" />
     <None Include="light_fragment_shader.glsl" />
     <None Include="light_vertex_shader.glsl" />
     <None Include="packages.config" />
-    <None Include="object_vertex_shader.glsl" />
+    <None Include="voxel_vertex_shader.glsl" />
+    <None Include="skybox_fragment_shader.glsl" />
+    <None Include="skybox_vertex_shader.glsl" />
     <None Include="wireframe_fragment_shader.glsl" />
     <None Include="wireframe_vertex_shader.glsl" />
   </ItemGroup>
