@@ -22,31 +22,7 @@ int main() {
         glEnable(GL_CULL_FACE);
         glCullFace(GL_FRONT);
 
-        WorldLighting worldLight
-        ( 
-            { 
-                Shapes::base_cube_vertices, 
-                Attributes_Details::voxelFloatAttributes, 
-                Shapes::cube_indices 
-            }, 
-            "light_vertex_shader.glsl", 
-            "light_fragment_shader.glsl"
-        ); 
-
-        WorldSkybox worldSkybox
-        (
-            {
-                Shapes::base_cube_vertices,
-                Attributes_Details::voxelFloatAttributes,
-                Shapes::cube_indices
-            },
-            "skybox_vertex_shader.glsl",
-            "skybox_fragment_shader.glsl"
-        );
-
         World world(
-            std::move(worldSkybox), 
-            std::move(worldLight),
             ShaderProgram{"voxel_vertex_shader.glsl", "voxel_fragment_shader.glsl"}, 
             Texture{"TextureAtlas.jpg"}
         ); world.generateChunks(6);       

@@ -172,6 +172,7 @@ namespace Shapes {
          0.5f,  0.5f,  0.5f,   0.0f, 1.0f, 0.0f,        1.0f, 0.0f,
         -0.5f,  0.5f,  0.5f,   0.0f, 1.0f, 0.0f,        0.0f, 0.0f,
     };
+
     constexpr std::array<float, Vertex_Data::Base_Cube> base_cube_vertices = {
         //Coordinates
         -0.5, -0.5f, -0.5f,
@@ -204,6 +205,7 @@ namespace Shapes {
          0.5, 0.5f,  0.5f,
         -0.5, 0.5f,  0.5f,
     };
+
     constexpr std::array<uint32_t, Shape_Indices::Cube> cube_indices = {
         1, 3, 0, 1, 2, 3, // North
         4, 6, 5, 4, 7, 6, // South
@@ -211,6 +213,15 @@ namespace Shapes {
         15, 13, 14, 15, 12, 13, // East
         17, 19, 18, 17, 16, 19, // Bottom
         22, 20, 21, 22, 23, 20 // Top
+    };
+
+    constexpr std::array<uint32_t, Shape_Indices::Cube> skybox_indices = {
+        0, 3, 2, 0, 2, 1, // North
+        4, 6, 7, 4, 5, 6, // South
+        8, 9, 10, 8, 10, 11, // West
+        12, 14, 13, 12, 15, 14, // East
+        19, 17, 18, 19, 16, 17, // Bottom
+        23, 22, 21, 23, 21, 20 // Top
     };
 }
 

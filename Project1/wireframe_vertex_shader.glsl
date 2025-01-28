@@ -1,13 +1,24 @@
 #version 460 core
 
-layout (location = 0) in vec3 aPos;
+layout (location = 0) in uint aPacked;
 
-uniform mat4 projection;
-uniform mat4 view;
-uniform mat4 model;
+#define MAX_CHUNKS 100
+layout(std140, binding = 0) uniform ModelMatrices {
+    mat4 modelMatrices[MAX_CHUNKS];
+};
 
+layout(std140, binding = 1) uniform VP_Matrices {
+    mat4 projectionMatrix;
+    mat4 viewMatrix;
+};
 
 void main() {
-	vec3 FragPos = vec3(model * vec4(aPos, 1.0));
-	gl_Position = projection * view * model * vec4(aPos, 1.0);
+	mat4 model = modelMatrices[gl_DrawID]; 
+    int coord_mask = 31; // Binary: 11111
+    float x = float((aPacked >> 0) & coord_mask);
+    float y = float((aPacked >> 5) & coord_mask);
+    float z = float((aPacked >> 10) & coord_mask);
+
+    vec3 aPos = vec3(x, y, z);
+	gl_Position = projectionMatrix * viewMatrix * model * vec4(aPos, 1.0);
 }
