@@ -12,7 +12,7 @@ namespace Chunk_Constants {
 	constexpr size_t Dimension_3DSize = 4096;
 }
 
-struct Chunk_Data {
+struct ChunkData {
 	using Vertices = std::vector<Vertex>;
 	Vertices chunk_vertices;
 
@@ -84,14 +84,15 @@ struct WorldChunk {
 };
 
 struct ChunkMesh {
-	BufferObjects chunkData{};
+	ChunkData chunkData{};
+	BufferObjects chunkBuffers{};
 	float_VEC pos{};
 	std::pair<uint32_t, uint32_t> numVerticesIndices = { 0, 0 };
 
 	ChunkMesh() {}
 
-	void addFace(Chunk_Data& data, const uint8_VEC& blockWorldPos, const Face_Data& faceData, const BLOCK_ID& type, uint32_t& vertexOffset) const;
-	Chunk_Data generate(float_VEC in_pos, const WorldChunk& worldChunk);
+	void addFace(const uint8_VEC& blockWorldPos, const Face_Data& faceData, const BLOCK_ID& type, uint32_t& vertexOffset);
+	void generate(const WorldChunk& worldChunk);
 	AABB getBoundingBox() const {
 		float_VEC worldMin = pos;
 		float_VEC worldMax = worldMin + float_VEC(static_cast<float>(Chunk_Constants::Dimension_1DSize));

@@ -1,11 +1,16 @@
 #ifndef WORLD_H
 #define WORLD_H
 
-#include <thread>
 #include <future>
+#include <queue>
+#include <vector>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <functional>
+#include <atomic>
 
 #include "Chunk.h"
-
 #include "Shader.h"
 #include "Texture.h"
 
@@ -80,5 +85,70 @@ public:
 	}
 };
 
+class ChunkGenerationThread {
+private:
+	std::mutex _queueMutex;
+	std::condition_variable _condition;
+	std::queue<std::function<void()>> tasks;
+	std::vector<std::thread> _workers;
+	size_t activeThreads = 0;
+	std::atomic<bool> _stop;
+public:
+	ChunkGenerationThread(size_t numThreads) : _stop(false) {
+		for (size_t i = 0; i < numThreads; i++) {
+			_workers.emplace_back([this]() {
+				while (true) {
+					std::function<void()> task = nullptr;
+
+					{
+						std::unique_lock<std::mutex> lock(_queueMutex);
+						_condition.wait(lock, [this]() {
+							return _stop || !tasks.empty();
+							});
+
+						if (_stop && tasks.empty())
+							return;
+
+						task = std::move(tasks.front());
+						tasks.pop();
+						
+					}
+					task();
+				}
+				});
+		}
+	}
+
+	std::future<void> enqueueTask(std::function<void()> task) {
+		auto promise = std::make_shared<std::promise<void>>();
+		auto future = promise->get_future();
+		{
+			std::unique_lock<std::mutex> lock(_queueMutex);
+			tasks.emplace([task = std::move(task), promise]() {
+				try {
+					task();
+					promise->set_value();
+				}
+				catch (...) {
+					promise->set_exception(std::current_exception());
+				}
+				});
+		}
+		_condition.notify_one();
+		return future;
+	}
+
+	~ChunkGenerationThread() noexcept {
+		{
+			std::unique_lock<std::mutex> lock(_queueMutex);
+			_stop = true;
+		}
+		_condition.notify_all();
+		for (auto& worker : _workers) {
+			worker.join();
+		}
+	}
+
+};
 
 #endif // WORLD_H

@@ -83,7 +83,7 @@ uint32_t WorldChunk::getVisibleFaces(
 	return numVisibleFaces;
 }
 
-void ChunkMesh::addFace(Chunk_Data& data, const uint8_VEC& blockWorldPos, const Face_Data& faceData, const BLOCK_ID& type, uint32_t& vertexOffset) const {
+void ChunkMesh::addFace(const uint8_VEC& blockWorldPos, const Face_Data& faceData, const BLOCK_ID& type, uint32_t& vertexOffset) {
 	auto getGrassTexture = [](FACES face) -> GLuint {
 		switch (face) {
 		case FACES::TOP:
@@ -118,21 +118,17 @@ void ChunkMesh::addFace(Chunk_Data& data, const uint8_VEC& blockWorldPos, const 
 			std::cerr << "\nInvalid block ID! ID was" << static_cast<int>(type);
 			throw std::runtime_error("\nEncountered undefined ID");
 		}
-		data.chunk_vertices.emplace_back(vertex_pos[0], vertex_pos[1], vertex_pos[2], vertex.normals, vertex.uv, textureIndex);
+		chunkData.chunk_vertices.emplace_back(vertex_pos[0], vertex_pos[1], vertex_pos[2], vertex.normals, vertex.uv, textureIndex);
 	}
 	for (const auto& indice : faceData.indices) {
-		data.chunk_indices.push_back(vertexOffset + indice);
+		chunkData.chunk_indices.push_back(vertexOffset + indice);
 	}
 	vertexOffset += 4;
 }
 
-Chunk_Data ChunkMesh::generate(float_VEC in_pos, const WorldChunk& worldChunk) {
-	pos = in_pos;
-
+void ChunkMesh::generate(const WorldChunk& worldChunk) {
 	uint8_VEC chunkMin = { 0, 0, 0 };
 	uint8_VEC chunkMax = { 15, 15, 15 };
-
-	Chunk_Data data;
 	uint32_t vertexOffset = 0;
 
 	auto getNeighborChunkBlock = [&](const FACES& face, uint8_VEC pos) -> bool {
@@ -170,7 +166,7 @@ Chunk_Data ChunkMesh::generate(float_VEC in_pos, const WorldChunk& worldChunk) {
 				BLOCK_ID blockType = worldChunk.blocks[y][z].getID(static_cast<uint64_t>(x));
 				while (visibleFaces != 0) {
 					uint32_t currFace = (visibleFaces % 10) - 1; // Minus one because of added offset 
-					addFace(data, blockCoordinate, FACE_DATA[currFace], blockType, vertexOffset);
+					addFace(blockCoordinate, FACE_DATA[currFace], blockType, vertexOffset);
 					visibleFaces /= 10;
 				}
 
@@ -178,5 +174,4 @@ Chunk_Data ChunkMesh::generate(float_VEC in_pos, const WorldChunk& worldChunk) {
 			}
 		}
 	}
-	return data;
 }

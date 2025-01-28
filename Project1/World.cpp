@@ -27,7 +27,7 @@ void World::setDirectionalLightUniform() const {
 		{
 			{ "directional_light.direction",	glm::vec3(-0.2f, -1.0f, -0.3f)	},
 			{ "directional_light.ambient",		glm::vec3(0.2f, 0.2f, 0.2f)		},
-			{ "directional_light.diffuse",		glm::vec3(0.5f, 0.5f, 0.5f)		},
+			{ "directional_light.diffuse",		glm::vec3(0.75f, 0.75f, 0.75f)		},
 			{ "directional_light.specular",		glm::vec3(1.0f, 1.0f, 1.0f)		}
 		}
 	};
@@ -113,8 +113,9 @@ void World::generateChunks(size_t gridSize)
 	const siv::PerlinNoise::seed_type seed = 123456u;
 	const siv::PerlinNoise perlin{ seed };
 
-	_worldChunks.resize(gridSize * gridSize);
-	_chunkMeshes.resize(gridSize * gridSize);
+	const size_t numChunks = (gridSize * gridSize);
+	_worldChunks.resize(numChunks);
+	_chunkMeshes.resize(numChunks);
 
 	constexpr std::array<std::pair<FACES, int32_VEC>, 4> neighborOffsets = { {
 		{FACES::WEST,	{-1, 0, 0}},
@@ -124,98 +125,86 @@ void World::generateChunks(size_t gridSize)
 		{FACES::SOUTH,	{0, 0, 1}}
 		}
 	};
+	const size_t numThreads = std::min<size_t>(std::thread::hardware_concurrency() - 1, gridSize * gridSize);
+	static ChunkGenerationThread chunkThreadPool(numThreads);
 
-	const size_t numThreads = std::min<size_t>(std::thread::hardware_concurrency(), gridSize * gridSize);;
-	std::vector<std::future<void>> terrainFuture;
+	std::vector<std::future<void>> terrainFutures;
+	for (size_t i = 0; i < numChunks; i++) {
+		terrainFutures.push_back(chunkThreadPool.enqueueTask([&, i]() -> void {
+			size_t z = i / gridSize;
+			size_t x = i % gridSize;
 
-	// Divide the total chunks among threads
-	size_t chunksPerThread = (gridSize * gridSize + numThreads - 1) / numThreads;
+			float_VEC chunkOffset = {
+				static_cast<float>(x) * 16.0f,
+				0.0f,
+				static_cast<float>(z) * 16.0f
+			};
 
-	for (size_t thread = 0; thread < numThreads; thread++) {
-		terrainFuture.emplace_back(std::async(std::launch::async, [&, thread]() {
-			size_t start = thread * chunksPerThread;
-			size_t end = std::min(start + chunksPerThread, gridSize * gridSize);
+			generateTerrain(perlin, _worldChunks[i].blocks, chunkOffset);
 
-			for (size_t i = start; i < end; i++) {
-				size_t z = i / gridSize;
-				size_t x = i % gridSize;
+			for (const auto& neighbor : neighborOffsets) {
+				int neighborX = static_cast<int>(x) + neighbor.second.x;
+				int neighborZ = static_cast<int>(z) + neighbor.second.z;
 
-				float_VEC chunkOffset = {
-					static_cast<float>(x) * 16.0f,
-					0.0f,
-					static_cast<float>(z) * 16.0f
-				};
-
-				generateTerrain(perlin, _worldChunks[i].blocks, chunkOffset);
-
-				for (const auto& neighbor : neighborOffsets) {
-					int neighborX = static_cast<int>(x) + neighbor.second.x;
-					int neighborZ = static_cast<int>(z) + neighbor.second.z;
-
-					if (neighborX >= 0 && neighborX < static_cast<int>(gridSize) &&
-						neighborZ >= 0 && neighborZ < static_cast<int>(gridSize)) {
-						size_t neighborIndex = neighborZ * gridSize + neighborX;
-						_worldChunks[i].neighborChunks.neighbors[static_cast<int>(neighbor.first)] = &_worldChunks[neighborIndex];
-					}
+				if (neighborX >= 0 && neighborX < static_cast<int>(gridSize) &&
+					neighborZ >= 0 && neighborZ < static_cast<int>(gridSize)) {
+					size_t neighborIndex = neighborZ * gridSize + neighborX;
+					_worldChunks[i].neighborChunks.neighbors[static_cast<int>(neighbor.first)] = &_worldChunks[neighborIndex];
 				}
 			}
-			}));
+			})
+		);
 	}
 
-	for (auto& future : terrainFuture) {
+	for (auto& future : terrainFutures) {
 		future.get();
 	}
 
-	std::vector<std::future<std::vector<std::pair<size_t, Chunk_Data>>>> meshFuture;
-	for (size_t thread = 0; thread < numThreads; thread++) {
-		meshFuture.emplace_back(std::async(std::launch::async, [&, thread]() {
-			size_t start = thread * chunksPerThread;
-			size_t end = std::min(start + chunksPerThread, gridSize * gridSize);
+	std::vector<std::future<void>> meshFutures;
+	for (size_t i = 0; i < numChunks; i++) {
+		meshFutures.push_back(chunkThreadPool.enqueueTask([&, i]() -> void {
+			size_t z = i / gridSize;
+			size_t x = i % gridSize;
+			float_VEC chunkOffset = {
+				static_cast<float>(x) * 16.0f,
+				0.0f,
+				static_cast<float>(z) * 16.0f
+			};
 
-			std::vector<std::pair<size_t, Chunk_Data>> threadResults;
+			_chunkMeshes[i].pos = chunkOffset;
+			_chunkMeshes[i].generate(_worldChunks[i]);
+			})
+		);
+	}
 
-			for (size_t i = start; i < end; i++) {
-				size_t z = i / gridSize;
-				size_t x = i % gridSize;
-				float_VEC chunkOffset = {
-					static_cast<float>(x) * 16.0f,
-					0.0f,
-					static_cast<float>(z) * 16.0f
-				};
-
-				threadResults.emplace_back(i, _chunkMeshes[i].generate(chunkOffset, _worldChunks[i]));
-			}
-
-			return threadResults;
-			}));
+	for (auto& future : meshFutures) {
+		future.get();
 	}
 
 	uint32_t vetexOffset = 0;
-	std::vector<Vertex> worldVertex; std::vector<uint32_t> worldIndex;
+	std::vector<Vertex> renderedVertices; std::vector<uint32_t> renderedIndices;
 
-	for (auto& future : meshFuture) {
-		const auto& threadResults = future.get();
-		for (const auto& [chunkIndex, chunkData] : threadResults) {
+	for (size_t i = 0; i < numChunks; i++) {
+		const auto& [chunkVertices, chunkIndices] = _chunkMeshes[i].chunkData;
+		auto numVertices = static_cast<uint32_t>(chunkVertices.size());
+		auto numIndices = static_cast<uint32_t>(chunkIndices.size());
 
-			auto numVertices	= static_cast<uint32_t>(chunkData.chunk_vertices.size());
-			auto numIndices		= static_cast<uint32_t>(chunkData.chunk_indices.size());
+		_worldVerticesIndices.first += numVertices; _worldVerticesIndices.second += numIndices;
+		_chunkMeshes[i].numVerticesIndices = std::make_pair(numVertices, numIndices);
 
-			_worldVerticesIndices.first += numVertices; _worldVerticesIndices.second += numIndices;
-			_chunkMeshes[chunkIndex].numVerticesIndices = std::make_pair(numVertices, numIndices);
+		renderedVertices.insert(renderedVertices.end(), chunkVertices.begin(), chunkVertices.end());
+		std::transform(chunkIndices.begin(), chunkIndices.end(), std::back_inserter(renderedIndices), [&](uint32_t index) {
+			return index + vetexOffset;
+			});
 
-			worldVertex.insert(worldVertex.end(), chunkData.chunk_vertices.begin(), chunkData.chunk_vertices.end());
-			std::transform(chunkData.chunk_indices.begin(), chunkData.chunk_indices.end(), std::back_inserter(worldIndex), [&](uint32_t index) {
-				return index + vetexOffset;
-				});
+		_indirect.modelMatrices.push_back(
+			glm::translate(
+				glm::mat4(1.0f),
+				glm::vec3(_chunkMeshes[i].pos)
+			)
+		);
+		vetexOffset += numVertices;
 
-			_indirect.modelMatrices.push_back(
-				glm::translate(
-					glm::mat4(1.0f),
-					glm::vec3(_chunkMeshes[chunkIndex].pos)
-				)
-			);
-			vetexOffset += numVertices;
-		}
 	}
 
 	glGenBuffers(1, &_indirect.modelUniformBuffer);
@@ -223,9 +212,9 @@ void World::generateChunks(size_t gridSize)
 	glBufferData(GL_UNIFORM_BUFFER, _indirect.modelMatrices.size() * sizeof(glm::mat4), _indirect.modelMatrices.data(), GL_STATIC_DRAW);
 
 	_worldBuffers = BufferObjects(
-		worldVertex,
+		renderedVertices,
 		Attributes_Details::voxelPackedAttributes,
-		worldIndex
+		renderedIndices
 	);
 
 	uint32_t firstIndexOffset = 0;
@@ -242,19 +231,19 @@ void World::generateChunks(size_t gridSize)
 
 	glGenBuffers(1, &_indirect.indirectBuffer);
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, _indirect.indirectBuffer);
-	
+
 	glBufferStorage(GL_DRAW_INDIRECT_BUFFER, _indirect.drawCommands.size() * sizeof(IndirectRendering::DrawCommands), _indirect.drawCommands.data(),
 		GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
 
-	_indirect.indirectBufferPersistentPtr = 
+	_indirect.indirectBufferPersistentPtr =
 		static_cast<IndirectRendering::DrawCommands*>(
 			glMapBufferRange(
-				GL_DRAW_INDIRECT_BUFFER, 
-				0, 
+				GL_DRAW_INDIRECT_BUFFER,
+				0,
 				_indirect.drawCommands.size() * sizeof(IndirectRendering::DrawCommands),
 				GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT
 			)
-		);
+			);
 
 	if (!_indirect.indirectBufferPersistentPtr)
 		throw std::runtime_error("\nUnable to initialize indirectBufferPersistentPtr");
