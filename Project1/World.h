@@ -3,18 +3,14 @@
 
 #include <future>
 #include <queue>
-#include <vector>
 #include <thread>
 #include <mutex>
 #include <condition_variable>
-#include <functional>
 #include <atomic>
 
 #include "Chunk.h"
 #include "Shader.h"
 #include "Texture.h"
-
-#include "PerlinNoise.hpp"
 
 GLenum glCheckError_(const char* file, int line);
 
@@ -40,7 +36,6 @@ class World {
 private:
 	void setDirectionalLightUniform() const;
 	void setPointLightsUniform() const;
-	void generateTerrain(const siv::PerlinNoise& perlin, WorldChunk::Blocks& chunkTerrain, const float_VEC& chunkOffset) const;
 	IndirectRendering _indirect;
 
 	WorldChunks _worldChunks{};
@@ -91,7 +86,6 @@ private:
 	std::condition_variable _condition;
 	std::queue<std::function<void()>> tasks;
 	std::vector<std::thread> _workers;
-	size_t activeThreads = 0;
 	std::atomic<bool> _stop;
 public:
 	ChunkGenerationThread(size_t numThreads) : _stop(false) {

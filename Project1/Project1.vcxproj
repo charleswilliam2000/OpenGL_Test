@@ -111,7 +111,7 @@
       <Optimization>Disabled</Optimization>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <FloatingPointModel>Fast</FloatingPointModel>
+      <FloatingPointModel>Precise</FloatingPointModel>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>

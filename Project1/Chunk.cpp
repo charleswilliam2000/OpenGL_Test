@@ -83,6 +83,46 @@ uint32_t WorldChunk::getVisibleFaces(
 	return numVisibleFaces;
 }
 
+void WorldChunk::generate(const siv::PerlinNoise& perlin, const float_VEC& chunkOffset)
+{
+	constexpr double scale = 30.0, persistence = 0.5, lacunuarity = 1.5; 
+	constexpr size_t octaves = 8;
+
+	for (uint8_t z = 0; z < Chunk_Constants::Dimension_1DSize; z++) {
+		for (uint8_t x = 0; x < Chunk_Constants::Dimension_1DSize; x++) {
+
+			double frequency = 1.0, amplitude = 1.0;
+			double noiseHeight = 0.0;
+
+			for (size_t i = 0; i < octaves; i++) {
+				double sampleX = ((chunkOffset.x + static_cast<double>(x)) / scale) * frequency;
+				double sampleZ = ((chunkOffset.z + static_cast<double>(z)) / scale) * frequency;
+
+				noiseHeight += std::pow(perlin.noise2D_01(sampleX, sampleZ), 2) * amplitude;
+
+				amplitude *= persistence;
+				frequency *= lacunuarity;
+			}
+
+			size_t integerHeight = noiseHeight * Chunk_Constants::Dimension_1DSize;
+			if (integerHeight >= Chunk_Constants::Dimension_1DSize) {
+				integerHeight = Chunk_Constants::Dimension_1DSize;
+			}
+
+			for (uint8_t y = 0; y < integerHeight; y++) {
+				if (y < integerHeight - 1) {
+					blocks[y][z].setID(BLOCK_ID::DIRT, x);
+					solidBlocks.emplace_back(uint8_VEC{ x, y, z }, BLOCK_ID::DIRT);
+				}
+				else if (y == integerHeight - 1) {
+					blocks[y][z].setID(BLOCK_ID::GRASS, x);
+					solidBlocks.emplace_back(uint8_VEC{ x, y, z }, BLOCK_ID::GRASS);
+				}
+			}
+		}
+	}
+}
+
 void ChunkMesh::addFace(const uint8_VEC& blockWorldPos, const Face_Data& faceData, const BLOCK_ID& type, uint32_t& vertexOffset) {
 	auto getGrassTexture = [](FACES face) -> GLuint {
 		switch (face) {
@@ -150,28 +190,19 @@ void ChunkMesh::generate(const WorldChunk& worldChunk) {
 		}
 		};
 
-	for (uint8_t y = 0; y < Chunk_Constants::Dimension_1DSize; y++) {
-		for (uint8_t z = 0; z < Chunk_Constants::Dimension_1DSize; z++) {
-			for (uint8_t x = 0; x < Chunk_Constants::Dimension_1DSize; x++) {
+	auto& solidBlocks = worldChunk.solidBlocks;
+	for (const auto& solidBlock : solidBlocks) {
+		uint8_VEC blockCoordinate = solidBlock.first; 
+		BLOCK_ID blockType = solidBlock.second;
 
-				if (!worldChunk.isBlockSolid(x, y, z)) 
-					continue;
+		uint32_t visibleFaces = worldChunk.getVisibleFaces(blockCoordinate, chunkMin, chunkMax, getNeighborChunkBlock);
+		if (visibleFaces == 0) 
+			continue;
 
-				uint8_VEC blockCoordinate = { x, y, z }; 
-				uint32_t visibleFaces = worldChunk.getVisibleFaces(blockCoordinate, chunkMin, chunkMax, getNeighborChunkBlock);
-
-				if (visibleFaces == 0) 
-					continue;
-
-				BLOCK_ID blockType = worldChunk.blocks[y][z].getID(static_cast<uint64_t>(x));
-				while (visibleFaces != 0) {
-					uint32_t currFace = (visibleFaces % 10) - 1; // Minus one because of added offset 
-					addFace(blockCoordinate, FACE_DATA[currFace], blockType, vertexOffset);
-					visibleFaces /= 10;
-				}
-
-
-			}
+		while (visibleFaces != 0) {
+			uint32_t currFace = (visibleFaces % 10) - 1; // Minus one because of added offset 
+			addFace(blockCoordinate, FACE_DATA[currFace], blockType, vertexOffset);
+			visibleFaces /= 10;
 		}
 	}
 }

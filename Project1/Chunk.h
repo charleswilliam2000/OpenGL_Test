@@ -1,10 +1,12 @@
 #ifndef CHUNK_H
 #define CHUNK_H
 
+#include <functional>
+
 #include "Frustum.h"
 #include "Buffers.h"
 
-#include <functional>
+#include "PerlinNoise.hpp"
 
 namespace Chunk_Constants {
     constexpr size_t Dimension_1DSize = 16;
@@ -20,7 +22,7 @@ struct ChunkData {
 	Indices chunk_indices;
 };
 
-enum class BLOCK_ID : uint64_t {
+enum class BLOCK_ID : uint8_t {
 	AIR  = 0,
 	DIRT = 1,
 	GRASS = 2,
@@ -59,8 +61,10 @@ struct Block_ID {
 
 struct WorldChunk {
 	using Blocks = std::array<std::array<Block_ID, Chunk_Constants::Dimension_1DSize>, Chunk_Constants::Dimension_1DSize>;
+	using SolidBlocks = std::vector<std::pair<uint8_VEC, BLOCK_ID>>;
 
 	Blocks blocks{};
+	SolidBlocks solidBlocks{};
 
 	struct NeighborChunks {
 		std::array<WorldChunk*, 6> neighbors;
@@ -81,6 +85,8 @@ struct WorldChunk {
 		const uint8_VEC& chunkMaxBounds,
 		const std::function<bool(const FACES& face, uint8_VEC pos)>& getNeighborChunkBlock
 	) const;
+
+	void generate(const siv::PerlinNoise& perlin, const float_VEC& chunkOffset);
 };
 
 struct ChunkMesh {

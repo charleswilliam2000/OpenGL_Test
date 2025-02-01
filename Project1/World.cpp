@@ -61,33 +61,6 @@ void World::setPointLightsUniform() const {
 		_worldShader.setUniform1f(point.first, point.second);
 }
 
-void World::generateTerrain(const siv::PerlinNoise& perlin, WorldChunk::Blocks& chunkTerrain, const float_VEC& chunkOffset) const
-{
-	const double frequencyX = 0.001 + chunkOffset.x * 0.00001;
-	const double frequencyZ = 0.001 + chunkOffset.z * 0.00001;
-
-	const double chunkOffsetX = static_cast<double>(chunkOffset.x) * 2;
-	const double chunkOffsetZ = static_cast<double>(chunkOffset.z) * 2;
-
-	for (uint8_t z = 0; z < Chunk_Constants::Dimension_1DSize; z++) {
-		for (uint8_t x = 0; x < Chunk_Constants::Dimension_1DSize; x++) {
-			double globalX = (chunkOffsetX + static_cast<double>(x)) * frequencyX;
-			double globalZ = (chunkOffsetZ + static_cast<double>(z)) * frequencyZ;
-
-			double perlinVal = std::pow(perlin.octave2D_01(globalX, globalZ, 8, 0.5), 2);
-			int height = static_cast<int>(perlinVal * static_cast<double>(Chunk_Constants::Dimension_1DSize));
-			_ASSERT_EXPR(height < Chunk_Constants::Dimension_1DSize, "\nHeight higher than chunk's dimension");
-
-			for (uint8_t y = 0; y < height; y++) {
-				if (y < height - 1)
-					chunkTerrain[y][z].setID(BLOCK_ID::DIRT, x);
-				else if (y == height - 1)
-					chunkTerrain[y][z].setID(BLOCK_ID::GRASS, x);
-			}
-		}
-	}
-}
-
 World::World(ShaderProgram worldShader, Texture textureAtlas)
 	: 
 	_pointLights(
@@ -128,9 +101,9 @@ void World::generateChunks(size_t gridSize)
 	const size_t numThreads = std::min<size_t>(std::thread::hardware_concurrency() - 1, gridSize * gridSize);
 	static ChunkGenerationThread chunkThreadPool(numThreads);
 
-	std::vector<std::future<void>> terrainFutures;
+	std::vector<std::future<void>> terrainFutures(numChunks);
 	for (size_t i = 0; i < numChunks; i++) {
-		terrainFutures.push_back(chunkThreadPool.enqueueTask([&, i]() -> void {
+		terrainFutures[i] = chunkThreadPool.enqueueTask([&, i]() -> void {
 			size_t z = i / gridSize;
 			size_t x = i % gridSize;
 
@@ -140,7 +113,7 @@ void World::generateChunks(size_t gridSize)
 				static_cast<float>(z) * 16.0f
 			};
 
-			generateTerrain(perlin, _worldChunks[i].blocks, chunkOffset);
+			_worldChunks[i].generate(perlin, chunkOffset);
 
 			for (const auto& neighbor : neighborOffsets) {
 				int neighborX = static_cast<int>(x) + neighbor.second.x;
@@ -152,17 +125,16 @@ void World::generateChunks(size_t gridSize)
 					_worldChunks[i].neighborChunks.neighbors[static_cast<int>(neighbor.first)] = &_worldChunks[neighborIndex];
 				}
 			}
-			})
-		);
+		});
 	}
 
 	for (auto& future : terrainFutures) {
 		future.get();
 	}
 
-	std::vector<std::future<void>> meshFutures;
+	std::vector<std::future<void>> meshFutures(numChunks);
 	for (size_t i = 0; i < numChunks; i++) {
-		meshFutures.push_back(chunkThreadPool.enqueueTask([&, i]() -> void {
+		meshFutures[i] = chunkThreadPool.enqueueTask([&, i]() -> void {
 			size_t z = i / gridSize;
 			size_t x = i % gridSize;
 			float_VEC chunkOffset = {
@@ -173,8 +145,7 @@ void World::generateChunks(size_t gridSize)
 
 			_chunkMeshes[i].pos = chunkOffset;
 			_chunkMeshes[i].generate(_worldChunks[i]);
-			})
-		);
+		});
 	}
 
 	for (auto& future : meshFutures) {
@@ -243,7 +214,7 @@ void World::generateChunks(size_t gridSize)
 				_indirect.drawCommands.size() * sizeof(IndirectRendering::DrawCommands),
 				GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT
 			)
-			);
+		);
 
 	if (!_indirect.indirectBufferPersistentPtr)
 		throw std::runtime_error("\nUnable to initialize indirectBufferPersistentPtr");
@@ -271,12 +242,13 @@ void World::render(const Camera& camera, const Frustum& cameraFrustum, bool wire
 		glBufferStorage(GL_UNIFORM_BUFFER, sizeof(VP), nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
 		glBindBufferBase(GL_UNIFORM_BUFFER, 1, vpUniformBuffer);
 
-		vpPersistentPtr = static_cast<glm::mat4*>(
-			glMapBufferRange(
-					GL_UNIFORM_BUFFER, 
-					0, 
-					sizeof(VP),
-					GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT
+		vpPersistentPtr = 
+			static_cast<glm::mat4*>(
+				glMapBufferRange(
+						GL_UNIFORM_BUFFER, 
+						0, 
+						sizeof(VP),
+						GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT
 				)
 			);
 		if (!vpPersistentPtr) throw std::runtime_error("Unable to initialize vpPersistentPtr!");
