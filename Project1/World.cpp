@@ -81,51 +81,64 @@ World::World(ShaderProgram worldShader, Texture textureAtlas)
 	_worldShader.setUniform1i("myTextures", _textureAtlas._textureID);
 }
 
-void World::generateChunks(size_t gridSize)
+void World::generateChunks(int gridSize, int verticalSize)
 {
-	const siv::PerlinNoise::seed_type seed = 123456u;
-	const siv::PerlinNoise perlin{ seed };
-
-	const size_t numChunks = (gridSize * gridSize);
+	const size_t numChunks = (gridSize * gridSize * verticalSize);
 	_worldChunks.resize(numChunks);
 	_chunkMeshes.resize(numChunks);
 
-	constexpr std::array<std::pair<FACES, int32_VEC>, 4> neighborOffsets = { {
+	const int horizontialCenter = gridSize / 2; // 3 = 1; 5 = 2; 7 = 3;
+	const int verticalCenter = verticalSize / 2;
+	const int maxTerrainHeight = ChunkConstants::Dimension_1DSize * verticalSize;
+
+	constexpr std::array<std::pair<FACES, int32_VEC>, 6> neighborOffsets = { {
 		{FACES::WEST,	{-1, 0, 0}},
+		{FACES::BOTTOM, {0, -1, 0}},
 		{FACES::NORTH,	{0, 0, -1}},
 
 		{FACES::EAST,	{1, 0, 0}},
+		{FACES::TOP,	{0, 1, 0}},
 		{FACES::SOUTH,	{0, 0, 1}}
 		}
 	};
-	const size_t numThreads = std::min<size_t>(std::thread::hardware_concurrency() - 1, gridSize * gridSize);
+
+	const size_t numThreads = std::min<size_t>(std::thread::hardware_concurrency() - 1, numChunks);
 	static ChunkGenerationThread chunkThreadPool(numThreads);
 
 	std::vector<std::future<void>> terrainFutures(numChunks);
-	for (size_t i = 0; i < numChunks; i++) {
-		terrainFutures[i] = chunkThreadPool.enqueueTask([&, i]() -> void {
-			size_t z = i / gridSize;
-			size_t x = i % gridSize;
 
-			float_VEC chunkOffset = {
-				static_cast<float>(x) * 16.0f,
-				0.0f,
-				static_cast<float>(z) * 16.0f
-			};
+	for (int chunkZ = 0; chunkZ < gridSize; chunkZ++) {
+		for (int chunkX = 0; chunkX < gridSize; chunkX++) {
+			for (int chunkY = 0; chunkY < verticalSize; chunkY++) {
+				size_t i = chunkY * (gridSize * gridSize) + chunkZ * gridSize + chunkX;
+				terrainFutures[i] = chunkThreadPool.enqueueTask([&, i, chunkX, chunkY, chunkZ]() -> void {
 
-			_worldChunks[i].generate(perlin, chunkOffset);
+					float_VEC chunkOffset = {
+						static_cast<float>((chunkX - horizontialCenter) * static_cast<int>(ChunkConstants::Dimension_1DSize)),
+						static_cast<float>((chunkY - verticalCenter)	* static_cast<int>(ChunkConstants::Dimension_1DSize)),
+						static_cast<float>((chunkZ - horizontialCenter) * static_cast<int>(ChunkConstants::Dimension_1DSize))
+					};
 
-			for (const auto& neighbor : neighborOffsets) {
-				int neighborX = static_cast<int>(x) + neighbor.second.x;
-				int neighborZ = static_cast<int>(z) + neighbor.second.z;
+					_worldChunks[i].generate(chunkOffset);
+					for (const auto& neighbor : neighborOffsets) {
 
-				if (neighborX >= 0 && neighborX < static_cast<int>(gridSize) &&
-					neighborZ >= 0 && neighborZ < static_cast<int>(gridSize)) {
-					size_t neighborIndex = neighborZ * gridSize + neighborX;
-					_worldChunks[i].neighborChunks.neighbors[static_cast<int>(neighbor.first)] = &_worldChunks[neighborIndex];
-				}
+						auto neighborX = chunkX + neighbor.second.x;
+						auto neighborY = chunkY + neighbor.second.y;
+						auto neighborZ = chunkZ + neighbor.second.z;
+
+						if (neighborX >= 0 && neighborX < gridSize &&
+							neighborY >= 0 && neighborY < gridSize &&
+							neighborZ >= 0 && neighborZ < gridSize) 
+
+						{
+							size_t neighborIndex = neighborY * (gridSize * verticalSize) + neighborZ * gridSize + neighborX;
+							_worldChunks[i].neighborChunks.neighbors[static_cast<int>(neighbor.first)] = &_worldChunks[neighborIndex];
+						}
+					}
+
+				});
 			}
-		});
+		}
 	}
 
 	for (auto& future : terrainFutures) {
@@ -133,19 +146,24 @@ void World::generateChunks(size_t gridSize)
 	}
 
 	std::vector<std::future<void>> meshFutures(numChunks);
-	for (size_t i = 0; i < numChunks; i++) {
-		meshFutures[i] = chunkThreadPool.enqueueTask([&, i]() -> void {
-			size_t z = i / gridSize;
-			size_t x = i % gridSize;
-			float_VEC chunkOffset = {
-				static_cast<float>(x) * 16.0f,
-				0.0f,
-				static_cast<float>(z) * 16.0f
-			};
+	for (size_t chunkZ = 0; chunkZ < gridSize; chunkZ++) {
+		for (size_t chunkX = 0; chunkX < gridSize; chunkX++) {
+			for (size_t chunkY = 0; chunkY < verticalSize; chunkY++) {
+				size_t i = chunkY * (gridSize * gridSize) + chunkZ * gridSize + chunkX;
 
-			_chunkMeshes[i].pos = chunkOffset;
-			_chunkMeshes[i].generate(_worldChunks[i]);
-		});
+				meshFutures[i] = chunkThreadPool.enqueueTask([&, i]() -> void {
+
+					float_VEC chunkOffset = {
+						static_cast<float>((chunkX - horizontialCenter) * static_cast<int>(ChunkConstants::Dimension_1DSize)),
+						static_cast<float>((chunkY - verticalCenter) * static_cast<int>(ChunkConstants::Dimension_1DSize)),
+						static_cast<float>((chunkZ - horizontialCenter) * static_cast<int>(ChunkConstants::Dimension_1DSize))
+					};
+
+					_chunkMeshes[i].pos = chunkOffset;
+					_chunkMeshes[i].generate(_worldChunks[i]);
+				});
+			}
+		}
 	}
 
 	for (auto& future : meshFutures) {
@@ -308,4 +326,50 @@ void World::render(const Camera& camera, const Frustum& cameraFrustum, bool wire
 	glDrawElements(GL_TRIANGLES, Shape_Indices::Cube, GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
 	glDepthFunc(GL_LESS);
+}
+
+ChunkGenerationThread::ChunkGenerationThread(size_t numThreads) : _stop(false)
+{
+	for (size_t i = 0; i < numThreads; i++) {
+		_workers.emplace_back([this]() {
+			while (true) {
+				std::function<void()> task = nullptr;
+
+				{
+					std::unique_lock<std::mutex> lock(_queueMutex);
+					_condition.wait(lock, [this]() {
+						return _stop || !tasks.empty();
+						});
+
+					if (_stop && tasks.empty())
+						return;
+
+					task = std::move(tasks.front());
+					tasks.pop();
+
+				}
+				task();
+			}
+			});
+	}
+	
+}
+
+std::future<void> ChunkGenerationThread::enqueueTask(std::function<void()> task) {
+	auto promise = std::make_shared<std::promise<void>>();
+	auto future = promise->get_future();
+	{
+		std::unique_lock<std::mutex> lock(_queueMutex);
+		tasks.emplace([task = std::move(task), promise]() {
+			try {
+				task();
+				promise->set_value();
+			}
+			catch (...) {
+				promise->set_exception(std::current_exception());
+			}
+			});
+	}
+	_condition.notify_one();
+	return future;
 }

@@ -25,9 +25,9 @@ int main() {
         World world(
             ShaderProgram{"voxel_vertex_shader.glsl", "voxel_fragment_shader.glsl"}, 
             Texture{"TextureAtlas.jpg"}
-        ); world.generateChunks(10);       
+        ); world.generateChunks(3, 1);       
                             //Pos                           //Front                     //Up
-        Camera camera({ glm::vec3(20.0f, 20.0f, 20.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f) });
+        Camera camera({ glm::vec3(0.0f, 30.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f) });
         
         game.insertCamera(&camera);
         game.insertWorld(&world);

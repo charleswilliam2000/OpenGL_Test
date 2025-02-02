@@ -8,7 +8,7 @@
 
 #include "PerlinNoise.hpp"
 
-namespace Chunk_Constants {
+namespace ChunkConstants {
     constexpr size_t Dimension_1DSize = 16;
 	constexpr size_t Dimension_2DSize = 256;
 	constexpr size_t Dimension_3DSize = 4096;
@@ -32,7 +32,7 @@ enum class BLOCK_ID : uint8_t {
 struct Block_ID {
 	uint64_t ID : 64; // 4 bits for every one block (Thus, 4 x 16 = 64 bits)
 	inline void setID(BLOCK_ID id, uint64_t x) {
-		if (x < Chunk_Constants::Dimension_1DSize) {
+		if (x < ChunkConstants::Dimension_1DSize) {
 			uint64_t mask = ~(0xFULL); 
 			uint64_t shiftAmount = static_cast<uint64_t>(4) * x;
 
@@ -44,7 +44,7 @@ struct Block_ID {
 	}
 
 	inline BLOCK_ID getID(uint64_t x) const {
-		if (x < Chunk_Constants::Dimension_1DSize) {
+		if (x < ChunkConstants::Dimension_1DSize) {
 			uint64_t shiftAmount = static_cast<uint64_t>(4) * x;
 			uint64_t mask = 0xFULL; // Mask for the lowest 4 bits
 
@@ -60,7 +60,7 @@ struct Block_ID {
 };
 
 struct WorldChunk {
-	using Blocks = std::array<std::array<Block_ID, Chunk_Constants::Dimension_1DSize>, Chunk_Constants::Dimension_1DSize>;
+	using Blocks = std::array<std::array<Block_ID, ChunkConstants::Dimension_1DSize>, ChunkConstants::Dimension_1DSize>;
 	using SolidBlocks = std::vector<std::pair<uint8_VEC, BLOCK_ID>>;
 
 	Blocks blocks{};
@@ -86,7 +86,7 @@ struct WorldChunk {
 		const std::function<bool(const FACES& face, uint8_VEC pos)>& getNeighborChunkBlock
 	) const;
 
-	void generate(const siv::PerlinNoise& perlin, const float_VEC& chunkOffset);
+	void generate(const float_VEC& chunkOffset);
 };
 
 struct ChunkMesh {
@@ -101,7 +101,7 @@ struct ChunkMesh {
 	void generate(const WorldChunk& worldChunk);
 	AABB getBoundingBox() const {
 		float_VEC worldMin = pos;
-		float_VEC worldMax = worldMin + float_VEC(static_cast<float>(Chunk_Constants::Dimension_1DSize));
+		float_VEC worldMax = worldMin + float_VEC(static_cast<float>(ChunkConstants::Dimension_1DSize));
 
 		return { worldMin, worldMax };
 	}

@@ -83,44 +83,53 @@ uint32_t WorldChunk::getVisibleFaces(
 	return numVisibleFaces;
 }
 
-void WorldChunk::generate(const siv::PerlinNoise& perlin, const float_VEC& chunkOffset)
+void WorldChunk::generate(const float_VEC& chunkOffset)
 {
-	constexpr double scale = 30.0, persistence = 0.5, lacunuarity = 1.5; 
-	constexpr size_t octaves = 8;
+	static const siv::PerlinNoise::seed_type seed = 123456u;
+	static const siv::PerlinNoise perlin{ seed };
 
-	for (uint8_t z = 0; z < Chunk_Constants::Dimension_1DSize; z++) {
-		for (uint8_t x = 0; x < Chunk_Constants::Dimension_1DSize; x++) {
+	constexpr double scale = 30.0, persistence = 0.5, lacunuarity = 1.5;
+	constexpr size_t octaves = 8ull;	
 
-			double frequency = 1.0, amplitude = 1.0;
-			double noiseHeight = 0.0;
+	for (uint8_t z = 0; z < ChunkConstants::Dimension_1DSize; z++) {
+		for (uint8_t x = 0; x < ChunkConstants::Dimension_1DSize; x++) {
+			for (uint8_t y = 0; y < ChunkConstants::Dimension_1DSize; y++) {
 
-			for (size_t i = 0; i < octaves; i++) {
-				double sampleX = ((chunkOffset.x + static_cast<double>(x)) / scale) * frequency;
-				double sampleZ = ((chunkOffset.z + static_cast<double>(z)) / scale) * frequency;
+				const double globalX = chunkOffset.x + static_cast<double>(x);
+				const double globalY = chunkOffset.y + static_cast<double>(y);
+				const double globalZ = chunkOffset.z + static_cast<double>(z);
 
-				noiseHeight += std::pow(perlin.noise2D_01(sampleX, sampleZ), 2) * amplitude;
+				double frequency = 1.0, amplitude = 1.0;
+				double noiseHeight = 0.0;
 
-				amplitude *= persistence;
-				frequency *= lacunuarity;
-			}
+				for (size_t i = 0; i < octaves; i++) {
+					double sampleX = (globalX / scale) * frequency;
+					double sampleY = (globalY / scale) * frequency;
+					double sampleZ = (globalZ / scale) * frequency;
 
-			size_t integerHeight = noiseHeight * Chunk_Constants::Dimension_1DSize;
-			if (integerHeight >= Chunk_Constants::Dimension_1DSize) {
-				integerHeight = Chunk_Constants::Dimension_1DSize;
-			}
+					noiseHeight += std::pow(perlin.noise3D_01(sampleX, sampleZ, sampleY), 2) * amplitude;
 
-			for (uint8_t y = 0; y < integerHeight; y++) {
-				if (y < integerHeight - 1) {
+					amplitude *= persistence;
+					frequency *= lacunuarity;
+				}
+
+				size_t height = noiseHeight * ChunkConstants::Dimension_1DSize;
+				if (height > ChunkConstants::Dimension_1DSize) {
+					height = ChunkConstants::Dimension_1DSize;
+				}
+
+				if (y < height - 1) {
 					blocks[y][z].setID(BLOCK_ID::DIRT, x);
 					solidBlocks.emplace_back(uint8_VEC{ x, y, z }, BLOCK_ID::DIRT);
 				}
-				else if (y == integerHeight - 1) {
+				else if (y == height - 1) {
 					blocks[y][z].setID(BLOCK_ID::GRASS, x);
 					solidBlocks.emplace_back(uint8_VEC{ x, y, z }, BLOCK_ID::GRASS);
 				}
+				
 			}
 		}
-	}
+	} 
 }
 
 void ChunkMesh::addFace(const uint8_VEC& blockWorldPos, const Face_Data& faceData, const BLOCK_ID& type, uint32_t& vertexOffset) {

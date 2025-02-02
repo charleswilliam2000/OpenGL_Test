@@ -36,6 +36,7 @@ class World {
 private:
 	void setDirectionalLightUniform() const;
 	void setPointLightsUniform() const;
+
 	IndirectRendering _indirect;
 
 	WorldChunks _worldChunks{};
@@ -61,7 +62,7 @@ private:
 	Texture _textureAtlas{};
 public:
 	World(ShaderProgram worldShader, Texture textureAtlas);
-	void generateChunks(size_t numChunks);
+	void generateChunks(int gridSize, int verticalSize);
 	void render(const Camera& camera, const Frustum& cameraFrustum, bool wireframeMode);
 
 	~World() noexcept {
@@ -88,49 +89,9 @@ private:
 	std::vector<std::thread> _workers;
 	std::atomic<bool> _stop;
 public:
-	ChunkGenerationThread(size_t numThreads) : _stop(false) {
-		for (size_t i = 0; i < numThreads; i++) {
-			_workers.emplace_back([this]() {
-				while (true) {
-					std::function<void()> task = nullptr;
+	ChunkGenerationThread(size_t numThreads);
 
-					{
-						std::unique_lock<std::mutex> lock(_queueMutex);
-						_condition.wait(lock, [this]() {
-							return _stop || !tasks.empty();
-							});
-
-						if (_stop && tasks.empty())
-							return;
-
-						task = std::move(tasks.front());
-						tasks.pop();
-						
-					}
-					task();
-				}
-				});
-		}
-	}
-
-	std::future<void> enqueueTask(std::function<void()> task) {
-		auto promise = std::make_shared<std::promise<void>>();
-		auto future = promise->get_future();
-		{
-			std::unique_lock<std::mutex> lock(_queueMutex);
-			tasks.emplace([task = std::move(task), promise]() {
-				try {
-					task();
-					promise->set_value();
-				}
-				catch (...) {
-					promise->set_exception(std::current_exception());
-				}
-				});
-		}
-		_condition.notify_one();
-		return future;
-	}
+	std::future<void> enqueueTask(std::function<void()> task);
 
 	~ChunkGenerationThread() noexcept {
 		{
