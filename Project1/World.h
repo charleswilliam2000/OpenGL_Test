@@ -36,6 +36,7 @@ class World {
 private:
 	void setDirectionalLightUniform() const;
 	void setPointLightsUniform() const;
+	std::array<uint32_t, ChunkConstants::Dimension_2DSize> sampleHeightmap(const float_VEC& chunkOffset, const size_t& maxHeight);
 
 	IndirectRendering _indirect;
 

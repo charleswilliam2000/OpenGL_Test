@@ -61,6 +61,59 @@ void World::setPointLightsUniform() const {
 		_worldShader.setUniform1f(point.first, point.second);
 }
 
+std::array<uint32_t, ChunkConstants::Dimension_2DSize> World::sampleHeightmap(const float_VEC& chunkOffset, const size_t& maxHeight)
+{
+	std::array<uint32_t, ChunkConstants::Dimension_2DSize> heightmap{};
+	static const siv::PerlinNoise::seed_type seed = 123456u;
+	static const siv::PerlinNoise perlin{ seed };
+
+	constexpr double scale = 30.0, persistence = 0.5, lacunuarity = 1.5;
+	constexpr size_t octaves = 4ull;
+
+	auto getMaxHeight = [&](double continentalness, size_t maxHeight) -> double {
+		double normalized = (continentalness + 1.0) * 0.5;
+
+		double factor = normalized * normalized * (3.0 - 2.0 * normalized); 
+
+		return (0.25 + (0.75 * factor)) * static_cast<double>(maxHeight);
+		};
+
+	for (uint32_t z = 0; z < ChunkConstants::Dimension_1DSize; z++) {
+		for (uint32_t x = 0; x < ChunkConstants::Dimension_1DSize; x++) {
+
+			uint32_t i = z * ChunkConstants::Dimension_1DSize + x;
+
+			const double globalX = chunkOffset.x + static_cast<double>(x);
+			const double globalZ = chunkOffset.z + static_cast<double>(z);
+
+			double frequency = 1.0, amplitude = 1.0;
+
+			double noiseHeight = 0.0;
+			double continentalness = 0.0;
+
+
+			for (size_t octave = 0; octave < octaves; octave++) {
+				double sampleX = (globalX / scale) * frequency;
+				double sampleZ = (globalZ / scale) * frequency;
+
+				continentalness += perlin.noise2D((globalX / scale) * 0.1, (globalZ / scale) * 0.1);
+				noiseHeight	+= std::pow(1.0 - perlin.noise2D_01(sampleX, sampleZ), 4) * amplitude;
+
+				amplitude *= persistence;
+				frequency *= lacunuarity;
+			}
+
+			uint32_t height = static_cast<uint32_t>(noiseHeight * getMaxHeight(continentalness, maxHeight));
+
+			if (height > maxHeight) 
+				height = maxHeight;
+
+			heightmap[i] = height;
+		}
+	}
+	return heightmap;
+}
+
 World::World(ShaderProgram worldShader, Texture textureAtlas)
 	: 
 	_pointLights(
@@ -87,7 +140,7 @@ void World::generateChunks(int gridSize, int verticalSize)
 	_worldChunks.resize(numChunks);
 	_chunkMeshes.resize(numChunks);
 
-	const int horizontialCenter = gridSize / 2; // 3 = 1; 5 = 2; 7 = 3;
+	const int horizontalCenter = gridSize / 2; // 3 = 1; 5 = 2; 7 = 3;
 	const int verticalCenter = verticalSize / 2;
 	const int maxTerrainHeight = ChunkConstants::Dimension_1DSize * verticalSize;
 
@@ -105,21 +158,25 @@ void World::generateChunks(int gridSize, int verticalSize)
 	const size_t numThreads = std::min<size_t>(std::thread::hardware_concurrency() - 1, numChunks);
 	static ChunkGenerationThread chunkThreadPool(numThreads);
 
-	std::vector<std::future<void>> terrainFutures(numChunks);
-
+	std::vector<std::future<void>> terrainFutures(gridSize * gridSize);
 	for (int chunkZ = 0; chunkZ < gridSize; chunkZ++) {
 		for (int chunkX = 0; chunkX < gridSize; chunkX++) {
-			for (int chunkY = 0; chunkY < verticalSize; chunkY++) {
-				size_t i = chunkY * (gridSize * gridSize) + chunkZ * gridSize + chunkX;
-				terrainFutures[i] = chunkThreadPool.enqueueTask([&, i, chunkX, chunkY, chunkZ]() -> void {
 
-					float_VEC chunkOffset = {
-						static_cast<float>((chunkX - horizontialCenter) * static_cast<int>(ChunkConstants::Dimension_1DSize)),
-						static_cast<float>((chunkY - verticalCenter)	* static_cast<int>(ChunkConstants::Dimension_1DSize)),
-						static_cast<float>((chunkZ - horizontialCenter) * static_cast<int>(ChunkConstants::Dimension_1DSize))
-					};
+			size_t i = chunkZ * gridSize + chunkX;
 
-					_worldChunks[i].generate(chunkOffset);
+			terrainFutures[i] = chunkThreadPool.enqueueTask([&, i, chunkX, chunkZ]() -> void {
+
+				float_VEC chunkOffset = {
+					static_cast<float>((chunkX - horizontalCenter) * static_cast<int>(ChunkConstants::Dimension_1DSize)),
+					0.0f,
+					static_cast<float>((chunkZ - horizontalCenter) * static_cast<int>(ChunkConstants::Dimension_1DSize))
+				};
+
+				auto heightmap = sampleHeightmap(chunkOffset, maxTerrainHeight);
+
+				for (int chunkY = 0; chunkY < verticalSize; chunkY++) {
+					size_t chunkIndex = chunkY * (gridSize * gridSize) + i;
+					_worldChunks[chunkIndex].generate(heightmap);
 					for (const auto& neighbor : neighborOffsets) {
 
 						auto neighborX = chunkX + neighbor.second.x;
@@ -128,16 +185,20 @@ void World::generateChunks(int gridSize, int verticalSize)
 
 						if (neighborX >= 0 && neighborX < gridSize &&
 							neighborY >= 0 && neighborY < gridSize &&
-							neighborZ >= 0 && neighborZ < gridSize) 
+							neighborZ >= 0 && neighborZ < gridSize)
 
 						{
-							size_t neighborIndex = neighborY * (gridSize * verticalSize) + neighborZ * gridSize + neighborX;
-							_worldChunks[i].neighborChunks.neighbors[static_cast<int>(neighbor.first)] = &_worldChunks[neighborIndex];
+							size_t neighborIndex = neighborY * (gridSize * gridSize) + neighborZ * gridSize + neighborX;
+							_worldChunks[chunkIndex].neighborChunks.neighbors[static_cast<int>(neighbor.first)] = &_worldChunks[neighborIndex];
 						}
 					}
+					std::transform(heightmap.begin(), heightmap.end(), heightmap.begin(), [&](uint32_t heightValue) {
+						return heightValue -= (heightValue > ChunkConstants::Dimension_1DSize) ? ChunkConstants::Dimension_1DSize : heightValue;
+						});
 
-				});
-			}
+				}
+
+			});
 		}
 	}
 
@@ -146,22 +207,22 @@ void World::generateChunks(int gridSize, int verticalSize)
 	}
 
 	std::vector<std::future<void>> meshFutures(numChunks);
-	for (size_t chunkZ = 0; chunkZ < gridSize; chunkZ++) {
-		for (size_t chunkX = 0; chunkX < gridSize; chunkX++) {
-			for (size_t chunkY = 0; chunkY < verticalSize; chunkY++) {
+	for (int chunkY = 0; chunkY < verticalSize; chunkY++) {
+		for (int chunkZ = 0; chunkZ < gridSize; chunkZ++) {
+			for (int chunkX = 0; chunkX < gridSize; chunkX++) {
 				size_t i = chunkY * (gridSize * gridSize) + chunkZ * gridSize + chunkX;
 
-				meshFutures[i] = chunkThreadPool.enqueueTask([&, i]() -> void {
+				meshFutures[i] = chunkThreadPool.enqueueTask([&, i, chunkX, chunkY, chunkZ]() -> void { // Capture by value
 
 					float_VEC chunkOffset = {
-						static_cast<float>((chunkX - horizontialCenter) * static_cast<int>(ChunkConstants::Dimension_1DSize)),
-						static_cast<float>((chunkY - verticalCenter) * static_cast<int>(ChunkConstants::Dimension_1DSize)),
-						static_cast<float>((chunkZ - horizontialCenter) * static_cast<int>(ChunkConstants::Dimension_1DSize))
+						static_cast<float>((chunkX - horizontalCenter)	* static_cast<int>(ChunkConstants::Dimension_1DSize)),
+						static_cast<float>((chunkY - verticalCenter)	* static_cast<int>(ChunkConstants::Dimension_1DSize)),
+						static_cast<float>((chunkZ - horizontalCenter)	* static_cast<int>(ChunkConstants::Dimension_1DSize))
 					};
 
 					_chunkMeshes[i].pos = chunkOffset;
 					_chunkMeshes[i].generate(_worldChunks[i]);
-				});
+					});
 			}
 		}
 	}
@@ -169,6 +230,7 @@ void World::generateChunks(int gridSize, int verticalSize)
 	for (auto& future : meshFutures) {
 		future.get();
 	}
+
 
 	uint32_t vetexOffset = 0;
 	std::vector<Vertex> renderedVertices; std::vector<uint32_t> renderedIndices;

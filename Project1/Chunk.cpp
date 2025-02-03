@@ -83,49 +83,27 @@ uint32_t WorldChunk::getVisibleFaces(
 	return numVisibleFaces;
 }
 
-void WorldChunk::generate(const float_VEC& chunkOffset)
+void WorldChunk::generate(const std::array<uint32_t, ChunkConstants::Dimension_2DSize>& heightmap)
 {
-	static const siv::PerlinNoise::seed_type seed = 123456u;
-	static const siv::PerlinNoise perlin{ seed };
+	for (size_t z = 0; z < ChunkConstants::Dimension_1DSize; z++) {
+		for (size_t x = 0; x < ChunkConstants::Dimension_1DSize; x++) {
 
-	constexpr double scale = 30.0, persistence = 0.5, lacunuarity = 1.5;
-	constexpr size_t octaves = 8ull;	
+			size_t i = z * ChunkConstants::Dimension_1DSize + x;
+			size_t cellHeight = heightmap[i];
 
-	for (uint8_t z = 0; z < ChunkConstants::Dimension_1DSize; z++) {
-		for (uint8_t x = 0; x < ChunkConstants::Dimension_1DSize; x++) {
-			for (uint8_t y = 0; y < ChunkConstants::Dimension_1DSize; y++) {
+			for (size_t y = 0; y < ChunkConstants::Dimension_1DSize; y++) {
 
-				const double globalX = chunkOffset.x + static_cast<double>(x);
-				const double globalY = chunkOffset.y + static_cast<double>(y);
-				const double globalZ = chunkOffset.z + static_cast<double>(z);
-
-				double frequency = 1.0, amplitude = 1.0;
-				double noiseHeight = 0.0;
-
-				for (size_t i = 0; i < octaves; i++) {
-					double sampleX = (globalX / scale) * frequency;
-					double sampleY = (globalY / scale) * frequency;
-					double sampleZ = (globalZ / scale) * frequency;
-
-					noiseHeight += std::pow(perlin.noise3D_01(sampleX, sampleZ, sampleY), 2) * amplitude;
-
-					amplitude *= persistence;
-					frequency *= lacunuarity;
+				if (y < cellHeight) {
+					if (y < cellHeight - 1) {
+						blocks[y][z].setID(BLOCK_ID::DIRT, x);
+						solidBlocks.emplace_back(uint8_VEC{ x, y, z }, BLOCK_ID::DIRT);
+					}
+					else if (y == cellHeight - 1) {
+						blocks[y][z].setID(BLOCK_ID::GRASS, x);
+						solidBlocks.emplace_back(uint8_VEC{ x, y, z }, BLOCK_ID::GRASS);
+					}
 				}
-
-				size_t height = noiseHeight * ChunkConstants::Dimension_1DSize;
-				if (height > ChunkConstants::Dimension_1DSize) {
-					height = ChunkConstants::Dimension_1DSize;
-				}
-
-				if (y < height - 1) {
-					blocks[y][z].setID(BLOCK_ID::DIRT, x);
-					solidBlocks.emplace_back(uint8_VEC{ x, y, z }, BLOCK_ID::DIRT);
-				}
-				else if (y == height - 1) {
-					blocks[y][z].setID(BLOCK_ID::GRASS, x);
-					solidBlocks.emplace_back(uint8_VEC{ x, y, z }, BLOCK_ID::GRASS);
-				}
+				else break;
 				
 			}
 		}

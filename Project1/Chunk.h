@@ -86,7 +86,7 @@ struct WorldChunk {
 		const std::function<bool(const FACES& face, uint8_VEC pos)>& getNeighborChunkBlock
 	) const;
 
-	void generate(const float_VEC& chunkOffset);
+	void generate(const std::array<uint32_t, ChunkConstants::Dimension_2DSize>& heightmap);
 };
 
 struct ChunkMesh {
