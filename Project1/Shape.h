@@ -53,9 +53,9 @@ constexpr std::array<Face_Data, 6> FACE_DATA = {
     {
         {
             { 0, 2, 1, 0, 3, 2 },
-            { //12 in binary: 1100
-                Vertex(0, 0, 1, 0, 2, 0),
-                Vertex(0, 1, 1, 0, 3, 0),
+            {
+                Vertex(0, 0, 1, 0, 3, 0),
+                Vertex(0, 1, 1, 0, 2, 0),
                 Vertex(0, 1, 0, 0, 0, 0),
                 Vertex(0, 0, 0, 0, 1, 0)
             },
@@ -63,7 +63,7 @@ constexpr std::array<Face_Data, 6> FACE_DATA = {
         },
         {
             {0, 2, 1, 0, 3, 2},
-            { //10 in binary: 1010
+            {
                 Vertex(0, 0, 1, 1, 1, 0),
                 Vertex(0, 0, 0, 1, 0, 0),
                 Vertex(1, 0, 0, 1, 2, 0),
@@ -73,7 +73,7 @@ constexpr std::array<Face_Data, 6> FACE_DATA = {
         },
         {
             {0, 2, 1, 0, 3, 2},
-            { //9 in binary: 1001
+            { 
                 Vertex(0, 0, 0, 2, 1, 0),
                 Vertex(0, 1, 0, 2, 0, 0),
                 Vertex(1, 1, 0, 2, 2, 0),

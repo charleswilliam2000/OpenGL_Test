@@ -61,19 +61,16 @@ void World::setPointLightsUniform() const {
 		_worldShader.setUniform1f(point.first, point.second);
 }
 
-std::array<uint32_t, ChunkConstants::Dimension_2DSize> World::sampleHeightmap(const float_VEC& chunkOffset, const size_t& maxHeight)
+std::array<uint32_t, ChunkConstants::Dimension_2DSize> World::sampleHeightmap(const siv::PerlinNoise& perlin, const float_VEC& chunkOffset)
 {
 	std::array<uint32_t, ChunkConstants::Dimension_2DSize> heightmap{};
-	static const siv::PerlinNoise::seed_type seed = 123456u;
-	static const siv::PerlinNoise perlin{ seed };
-
 	constexpr double scale = 30.0, persistence = 0.5, lacunuarity = 1.5;
-	constexpr size_t octaves = 4ull;
+	constexpr size_t octaves = 4ull, baseTerrainElevation = 80ull;
 
 	auto getMaxHeight = [&](double continentalness, size_t maxHeight) -> double {
 		double normalized = (continentalness + 1.0) * 0.5;
 
-		double factor = normalized * normalized * (3.0 - 2.0 * normalized); 
+		double factor = normalized * normalized * (3.0 - 2.0 * normalized);
 
 		return (0.25 + (0.75 * factor)) * static_cast<double>(maxHeight);
 		};
@@ -96,17 +93,17 @@ std::array<uint32_t, ChunkConstants::Dimension_2DSize> World::sampleHeightmap(co
 				double sampleX = (globalX / scale) * frequency;
 				double sampleZ = (globalZ / scale) * frequency;
 
-				continentalness += perlin.noise2D((globalX / scale) * 0.1, (globalZ / scale) * 0.1);
-				noiseHeight	+= std::pow(1.0 - perlin.noise2D_01(sampleX, sampleZ), 4) * amplitude;
+				continentalness += perlin.noise2D((globalX / scale) * 0.01, (globalZ / scale) * 0.01);
+				noiseHeight += std::pow(1.0 - perlin.noise2D_01(sampleX, sampleZ), 4) * amplitude;
 
 				amplitude *= persistence;
 				frequency *= lacunuarity;
 			}
 
-			uint32_t height = static_cast<uint32_t>(noiseHeight * getMaxHeight(continentalness, maxHeight));
+			uint32_t height = static_cast<uint32_t>(noiseHeight * getMaxHeight(continentalness, Constants::MAX_BLOCK_HEIGHT)) + baseTerrainElevation;
 
-			if (height > maxHeight) 
-				height = maxHeight;
+			if (height > Constants::MAX_BLOCK_HEIGHT)
+				height = Constants::MAX_BLOCK_HEIGHT;
 
 			heightmap[i] = height;
 		}
@@ -136,13 +133,16 @@ World::World(ShaderProgram worldShader, Texture textureAtlas)
 
 void World::generateChunks(int gridSize, int verticalSize)
 {
+	//seeding perlin noise
+	static const siv::PerlinNoise::seed_type seed = 123456u;
+	static const siv::PerlinNoise perlin{ seed };
+
 	const size_t numChunks = (gridSize * gridSize * verticalSize);
 	_worldChunks.resize(numChunks);
 	_chunkMeshes.resize(numChunks);
 
 	const int horizontalCenter = gridSize / 2; // 3 = 1; 5 = 2; 7 = 3;
 	const int verticalCenter = verticalSize / 2;
-	const int maxTerrainHeight = ChunkConstants::Dimension_1DSize * verticalSize;
 
 	constexpr std::array<std::pair<FACES, int32_VEC>, 6> neighborOffsets = { {
 		{FACES::WEST,	{-1, 0, 0}},
@@ -166,17 +166,25 @@ void World::generateChunks(int gridSize, int verticalSize)
 
 			terrainFutures[i] = chunkThreadPool.enqueueTask([&, i, chunkX, chunkZ]() -> void {
 
-				float_VEC chunkOffset = {
+				float_VEC chunk2DOffset = {
 					static_cast<float>((chunkX - horizontalCenter) * static_cast<int>(ChunkConstants::Dimension_1DSize)),
 					0.0f,
 					static_cast<float>((chunkZ - horizontalCenter) * static_cast<int>(ChunkConstants::Dimension_1DSize))
 				};
 
-				auto heightmap = sampleHeightmap(chunkOffset, maxTerrainHeight);
+				auto heightmap = sampleHeightmap(perlin, chunk2DOffset);
 
 				for (int chunkY = 0; chunkY < verticalSize; chunkY++) {
+
+					float_VEC chunk3DOffset = {
+						chunk2DOffset.x,
+						static_cast<float>((chunkY - verticalCenter) * static_cast<int>(ChunkConstants::Dimension_1DSize)),
+						chunk2DOffset.z
+					};
+
 					size_t chunkIndex = chunkY * (gridSize * gridSize) + i;
-					_worldChunks[chunkIndex].generate(heightmap);
+					_worldChunks[chunkIndex].generate(perlin, chunk3DOffset, heightmap);
+
 					for (const auto& neighbor : neighborOffsets) {
 
 						auto neighborX = chunkX + neighbor.second.x;
@@ -184,7 +192,7 @@ void World::generateChunks(int gridSize, int verticalSize)
 						auto neighborZ = chunkZ + neighbor.second.z;
 
 						if (neighborX >= 0 && neighborX < gridSize &&
-							neighborY >= 0 && neighborY < gridSize &&
+							neighborY >= 0 && neighborY < verticalSize &&
 							neighborZ >= 0 && neighborZ < gridSize)
 
 						{
