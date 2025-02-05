@@ -172,7 +172,9 @@
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="vectors.cpp" />
     <ClCompile Include="Game.cpp" />
-    <ClCompile Include="World.cpp" />
+    <ClCompile Include="WorldMultiThread.cpp" />
+    <ClCompile Include="WorldRender.cpp" />
+    <ClCompile Include="WorldGen.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Buffers.h" />

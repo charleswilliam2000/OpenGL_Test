@@ -84,7 +84,7 @@
     <ClCompile Include="Chunk.cpp">
       <Filter>Source Files\WorldGen</Filter>
     </ClCompile>
-    <ClCompile Include="World.cpp">
+    <ClCompile Include="WorldRender.cpp">
       <Filter>Source Files\WorldGen</Filter>
     </ClCompile>
     <ClCompile Include="Camera.cpp">
@@ -104,6 +104,12 @@
     </ClCompile>
     <ClCompile Include="Frustum.cpp">
       <Filter>Source Files\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldGen.cpp">
+      <Filter>Source Files\WorldGen</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldMultiThread.cpp">
+      <Filter>Source Files\WorldGen</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

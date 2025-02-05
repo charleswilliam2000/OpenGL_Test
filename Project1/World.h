@@ -12,8 +12,6 @@
 #include "Shader.h"
 #include "Texture.h"
 
-GLenum glCheckError_(const char* file, int line);
-
 struct IndirectRendering {
 	struct DrawCommands {
 		uint32_t count, instanceCount, firstIndex, baseVertex, baseInstance;
@@ -36,7 +34,12 @@ class World {
 private:
 	void setDirectionalLightUniform() const;
 	void setPointLightsUniform() const;
-	std::array<uint32_t, ChunkConstants::Dimension_2DSize> sampleHeightmap(const siv::PerlinNoise& perlin, const float_VEC& chunkOffset);
+	void initializeWorldVPUniformBuffer(uint32_t& vpUniformBuffer, glm::mat4*& vpPersistentPtr) const;
+	void renderChunks(const uint32_t& vpUniformBuffer, const Frustum& cameraFrustum) const;
+	void renderPointLight(const uint32_t& vpUniformBuffer) const;
+	void renderSkybox(const glm::mat4& view, const glm::mat4& projection) const;
+
+	std::array<uint32_t, ChunkConstants::Dimension_2DSize> sampleHeightmap(const siv::PerlinNoise& perlin, int baseTerrainElevation, const float_VEC& chunkOffset);
 
 	IndirectRendering _indirect;
 
