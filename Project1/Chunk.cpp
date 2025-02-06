@@ -83,14 +83,16 @@ uint32_t WorldChunk::getVisibleFaces(
 	return numVisibleFaces;
 }
 
-void WorldChunk::generate(const siv::PerlinNoise& perlin, const float_VEC& chunkOffset, const std::array<uint32_t, ChunkConstants::Dimension_2DSize>& heightmap)
+void WorldChunk::generate(
+	const siv::PerlinNoise& perlin, const float_VEC& chunkOffset, 
+	const std::array<uint8_t, ChunkConstants::Dimension_2DSize>& heightmap, 
+	int chunkY
+)
 {
 	constexpr double scale = 30.0, persistence = 0.5, lacunuarity = 1.5;
-	constexpr size_t octaves = 4ull;
-
 	auto sampleSolidNoise = [&](double globalX, double globalY, double globalZ) -> double {
 		double frequency = 1.0, amplitude = 1.0, solidNoise = 0.0;
-		for (size_t octave = 0; octave < octaves; octave++) {
+		for (size_t octave = 0; octave < 4; octave++) {
 			double
 				sampleX = (globalX / scale) * frequency,
 				sampleY = (globalY / scale) * frequency,
@@ -105,8 +107,8 @@ void WorldChunk::generate(const siv::PerlinNoise& perlin, const float_VEC& chunk
 	};
 
 	auto getChunkSolidThreshold = [&](float_VEC chunkOffset) -> double {
-		double normalizedChunkY = std::tanh((chunkOffset.y / static_cast<double>(ChunkConstants::Dimension_1DSize) / 3.0)); // Normalize to [-1, 1]
-		double sampleChunkY = 0.8 * std::sin(2.5 * normalizedChunkY + 2.5);
+		const double normalizedChunkY = std::tanh((chunkOffset.y / static_cast<double>(ChunkConstants::Dimension_1DSize) / 3.0)); // Normalize to [-1, 1]
+		const double sampleChunkY = 0.8 * std::sin(2.5 * normalizedChunkY + 2.5);
 
 		constexpr double minDensity = 0.3, maxDensity = 0.7;
 		return (maxDensity * sampleChunkY) + minDensity; // The larger sampleChunkY, the larger the density threshold 
@@ -117,31 +119,31 @@ void WorldChunk::generate(const siv::PerlinNoise& perlin, const float_VEC& chunk
 	for (size_t z = 0; z < ChunkConstants::Dimension_1DSize; z++) {
 		for (size_t x = 0; x < ChunkConstants::Dimension_1DSize; x++) {
 
-			size_t i = z * ChunkConstants::Dimension_1DSize + x;
-			size_t cellHeight = heightmap[i]; 
+			auto i = z * ChunkConstants::Dimension_1DSize + x;
+			const auto columnTotalHeight = heightmap[i];
+			const auto columnHeight = (columnTotalHeight / 16u == 0) ? columnTotalHeight : ChunkConstants::Dimension_1DSize;
 
-			for (size_t y = 0; y < ChunkConstants::Dimension_1DSize; y++) {
-
+			for (size_t y = 0; y < columnHeight; y++) {
 				const double globalX = chunkOffset.x + static_cast<double>(x);
 				const double globalY = chunkOffset.y + static_cast<double>(y);
 				const double globalZ = chunkOffset.z + static_cast<double>(z);
+				const double solidNoise = sampleSolidNoise(globalX, globalY, globalZ);
 
-				if (y < cellHeight) {
-					auto solidNoise = sampleSolidNoise(globalX, globalY, globalZ);
-
-					if (solidNoise < chunkSolidThreshold)
-						continue;
-
-					if (y < cellHeight - 1) {
+				if (solidNoise >= chunkSolidThreshold) {
+					if (globalY <= 0) {
+						blocks[y][z].setID(BLOCK_ID::STONE, x);
+						solidBlocks.emplace_back(uint8_VEC{ x, y, z }, BLOCK_ID::STONE);
+					}
+					else if (globalY > 0 && y < columnTotalHeight - 1) {
 						blocks[y][z].setID(BLOCK_ID::DIRT, x);
 						solidBlocks.emplace_back(uint8_VEC{ x, y, z }, BLOCK_ID::DIRT);
 					}
-					else if (y == cellHeight - 1) {
+					else if (globalY > 0 && y == columnTotalHeight - 1) {
 						blocks[y][z].setID(BLOCK_ID::GRASS, x);
 						solidBlocks.emplace_back(uint8_VEC{ x, y, z }, BLOCK_ID::GRASS);
 					}
 				}
-				else break;
+				else continue;
 			}
 		}
 	} 

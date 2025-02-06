@@ -1,48 +1,69 @@
 #include "World.h"
 
-std::array<uint32_t, ChunkConstants::Dimension_2DSize> World::sampleHeightmap(const siv::PerlinNoise& perlin, int baseTerrainElevation, const float_VEC& chunkOffset)
+std::array<uint8_t, ChunkConstants::Dimension_2DSize> World::sampleHeightmap(const siv::PerlinNoise& perlin, uint32_t baseTerrainElevation, const float_VEC& chunkOffset)
 {
-	std::array<uint32_t, ChunkConstants::Dimension_2DSize> heightmap{};
-	constexpr double scale = 30.0, persistence = 0.5, lacunuarity = 1.5;
-	constexpr size_t octaves = 4ull;
+	std::array<uint8_t, ChunkConstants::Dimension_2DSize> heightmap{};
 
-	auto sampleTerrainNoise = [&](double globalX, double globalZ) -> std::pair<double, double> {
+	constexpr double scale = 30.0, persistence = 0.5, lacunuarity = 1.5;
+	constexpr double continentalnessOffset = 1.0, erosionOffset = 244.0, elevationOffset = -111.0;
+
+	auto sampleHeightNoise = [&](double globalX, double globalZ) -> double {
 		double frequency = 1.0, amplitude = 1.0;
 		double noiseHeight = 0.0;
-		double continentalness = 0.0;
-
-		for (size_t octave = 0; octave < octaves; octave++) {
+		
+		for (size_t octave = 0; octave < 4; octave++) {
 			double sampleX = (globalX / scale) * frequency;
 			double sampleZ = (globalZ / scale) * frequency;
 
-			continentalness += perlin.noise2D(sampleX, sampleZ);
-			noiseHeight += std::pow(1.0 - perlin.noise2D_01(sampleX, sampleZ), 4) * amplitude;
+			noiseHeight += std::pow((1.0 - perlin.noise2D_01(sampleX, sampleZ)), 4) * amplitude;
 
 			amplitude *= persistence;
 			frequency *= lacunuarity;
 		}
 
-		return { noiseHeight, continentalness };
+		return noiseHeight;
 		};
 
-	auto getMaxHeight = [&](double continentalness, size_t maxHeight) -> double {
-		constexpr double var1 = 1.0, var2 = -0.5;
-		double normalizedContinentalness = std::tanh(continentalness);
-
-		double smootherStepVal = std::min(std::max((normalizedContinentalness - var1) / (var2 - var1), 0.0), 1.0);
-		return maxHeight * (1.0 - (smootherStepVal * smootherStepVal * smootherStepVal * (smootherStepVal * (6.0 * smootherStepVal - 15.0) + 10.0)));
+	auto getMaxHeight = [&](double continentalness, double elevation, double erosion, size_t maxHeight) -> double {
+		const auto normalizedContinentalness = std::tanh(continentalness);
+		const auto normalizedErosion = std::pow(1 - (std::tanh(erosion) * std::tanh(erosion)), 2.0);
+		const auto normalizedElevation = std::pow(1 - (std::tanh(0.75 * elevation) * std::tanh(0.75 * elevation)), 2.0);
+		
+		double clampedVal = std::min(std::max((normalizedContinentalness - 4.0 * normalizedErosion) / (-2.0 * normalizedElevation - 4.0 * normalizedErosion), 0.0), 1.0);
+		double smoothstepVal = 1.0 - (clampedVal * clampedVal * clampedVal * (clampedVal * (6.0 * clampedVal - 15.0) + 10.0));
+		return maxHeight * smoothstepVal;
 		};
 
-	for (uint32_t z = 0; z < ChunkConstants::Dimension_1DSize; z++) {
-		for (uint32_t x = 0; x < ChunkConstants::Dimension_1DSize; x++) {
+	for (uint8_t z = 0; z < ChunkConstants::Dimension_1DSize; z++) {
+		for (uint8_t x = 0; x < ChunkConstants::Dimension_1DSize; x++) {
 
 			uint32_t i = z * ChunkConstants::Dimension_1DSize + x;
 
 			const double globalX = chunkOffset.x + static_cast<double>(x);
 			const double globalZ = chunkOffset.z + static_cast<double>(z);
-			const std::pair<double, double> terrainNoise = sampleTerrainNoise(globalX, globalZ);
+			const double heightNoise = sampleHeightNoise(globalX, globalZ);
 
-			uint32_t height = static_cast<uint32_t>(terrainNoise.first * getMaxHeight(terrainNoise.second, Constants::MAX_BLOCK_HEIGHT)) + baseTerrainElevation;
+			double frequency = 1.0, amplitude = 2.0, continentalness = 0.0, erosion = 0.0, elevation = 0.0;
+			for (size_t octave = 0; octave < 4; octave++) {
+				const auto sampleContinentalnessX = ((globalX + continentalnessOffset) / scale) * frequency;
+				const auto sampleContinentalnessZ = ((globalZ + continentalnessOffset) / scale) * frequency;
+
+				const auto sampleErosionX = ((globalX + erosionOffset) / scale) * frequency;
+				const auto sampleErosionZ = ((globalZ + erosionOffset) / scale) * frequency;
+
+				const auto sampleElevationX = ((globalX + elevationOffset) / scale) * frequency;
+				const auto sampleElevationZ = ((globalZ + elevationOffset) / scale) * frequency;
+
+
+				continentalness += perlin.noise2D(sampleContinentalnessX, sampleContinentalnessZ) * amplitude;
+				erosion += perlin.noise2D(sampleErosionX, sampleErosionZ) * amplitude;
+				elevation += perlin.noise2D(sampleElevationX, sampleElevationZ) * amplitude;
+
+				amplitude *= persistence;
+				frequency *= lacunuarity;
+			}
+
+			uint8_t height = static_cast<uint8_t>(heightNoise * getMaxHeight(continentalness, elevation, erosion, Constants::MAX_BLOCK_HEIGHT)) + baseTerrainElevation;
 
 			if (height > Constants::MAX_BLOCK_HEIGHT)
 				height = Constants::MAX_BLOCK_HEIGHT;
@@ -55,7 +76,6 @@ std::array<uint32_t, ChunkConstants::Dimension_2DSize> World::sampleHeightmap(co
 
 void World::generateChunks(int gridSize, int verticalSize)
 {
-	//seeding perlin noise
 	static const siv::PerlinNoise::seed_type seed = 123456u;
 	static const siv::PerlinNoise perlin{ seed };
 
@@ -65,7 +85,7 @@ void World::generateChunks(int gridSize, int verticalSize)
 
 	const int horizontalCenter = gridSize / 2; // 3 = 1; 5 = 2; 7 = 3;
 	const int verticalCenter = verticalSize / 2;
-	const int baseTerrainElevation = verticalCenter * 24;
+	const uint32_t baseTerrainElevation = verticalCenter * 20;
 
 	constexpr std::array<std::pair<FACES, int32_VEC>, 6> neighborOffsets = { {
 		{FACES::WEST,	{-1, 0, 0}},
@@ -106,7 +126,7 @@ void World::generateChunks(int gridSize, int verticalSize)
 					};
 
 					size_t chunkIndex = chunkY * (gridSize * gridSize) + i;
-					_worldChunks[chunkIndex].generate(perlin, chunk3DOffset, heightmap);
+					_worldChunks[chunkIndex].generate(perlin, chunk3DOffset, heightmap, chunkY);
 
 					for (const auto& neighbor : neighborOffsets) {
 
@@ -123,10 +143,10 @@ void World::generateChunks(int gridSize, int verticalSize)
 							_worldChunks[chunkIndex].neighborChunks.neighbors[static_cast<int>(neighbor.first)] = &_worldChunks[neighborIndex];
 						}
 					}
-					std::transform(heightmap.begin(), heightmap.end(), heightmap.begin(), [&](uint32_t heightValue) {
-						return heightValue -= (heightValue > ChunkConstants::Dimension_1DSize) ? ChunkConstants::Dimension_1DSize : heightValue;
-						});
 
+					std::transform(heightmap.begin(), heightmap.end(), heightmap.begin(), [&](uint8_t height) {
+						return height -= (height > ChunkConstants::Dimension_1DSize) ? ChunkConstants::Dimension_1DSize : height;
+						});
 				}
 
 				});
@@ -143,7 +163,7 @@ void World::generateChunks(int gridSize, int verticalSize)
 			for (int chunkX = 0; chunkX < gridSize; chunkX++) {
 				size_t i = chunkY * (gridSize * gridSize) + chunkZ * gridSize + chunkX;
 
-				meshFutures[i] = chunkThreadPool.enqueueTask([&, i, chunkX, chunkY, chunkZ]() -> void { // Capture by value
+				meshFutures[i] = chunkThreadPool.enqueueTask([&, i, chunkX, chunkY, chunkZ]() -> void { 
 
 					float_VEC chunkOffset = {
 						static_cast<float>((chunkX - horizontalCenter) * static_cast<int>(ChunkConstants::Dimension_1DSize)),

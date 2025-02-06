@@ -39,7 +39,7 @@ private:
 	void renderPointLight(const uint32_t& vpUniformBuffer) const;
 	void renderSkybox(const glm::mat4& view, const glm::mat4& projection) const;
 
-	std::array<uint32_t, ChunkConstants::Dimension_2DSize> sampleHeightmap(const siv::PerlinNoise& perlin, int baseTerrainElevation, const float_VEC& chunkOffset);
+	std::array<uint8_t, ChunkConstants::Dimension_2DSize> sampleHeightmap(const siv::PerlinNoise& perlin, uint32_t baseTerrainElevation, const float_VEC& chunkOffset);
 
 	IndirectRendering _indirect;
 
