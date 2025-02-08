@@ -12,7 +12,7 @@ namespace Shader_Methods {
 }
 
 struct ShaderProgram {
-	uint32_t _shaderProgram = 0;
+	uint32_t shaderProgram = 0;
 
 	ShaderProgram(const char* vertexPath = nullptr, const char* fragmentPath = nullptr);
 

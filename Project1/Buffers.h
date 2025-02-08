@@ -75,7 +75,7 @@ public:
         return *this;
     }
 
-    ~BufferObjects() {
+    ~DrawableBufferObjects() {
         if (VAO) glDeleteVertexArrays(1, &VAO);
         if (VBO) glDeleteBuffers(1, &VBO);
         if (EBO) glDeleteBuffers(1, &EBO);
@@ -87,46 +87,38 @@ public:
     GLuint gBuffer = 0, rboDepth = 0;
     GLuint gPosition = 0, gNormal = 0, gColorSpecular = 0;
 
-    DeferredBufferObjects() {
-        glGenFramebuffers(1, &gBuffer);
-        glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
+    DeferredBufferObjects();
+    DeferredBufferObjects(DeferredBufferObjects&& other) noexcept
+        : gBuffer(other.gBuffer), rboDepth(other.rboDepth), gPosition(other.gPosition), gNormal(other.gNormal), gColorSpecular(other.gColorSpecular) {
+        other.gBuffer = other.rboDepth = other.gPosition = other.gNormal = other.gColorSpecular = 0;
+    }
 
-        //Generate position color buffer
-        glGenTextures(1, &gPosition);
-        glBindBuffer(GL_TEXTURE_2D, gPosition);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT, 0, GL_RGBA, GL_FLOAT, nullptr);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gPosition, 0);
+    DeferredBufferObjects& operator=(DeferredBufferObjects&& other) noexcept {
+        if (this != &other) {
+            glDeleteFramebuffers(1, &gBuffer);
+            glDeleteTextures(1, &gPosition);
+            glDeleteTextures(1, &gNormal);
+            glDeleteTextures(1, &gColorSpecular);
+            glDeleteRenderbuffers(1, &rboDepth);
 
-        //Generate normal color buffer
-        glGenTextures(1, &gNormal);
-        glBindBuffer(GL_TEXTURE_2D, gNormal);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT, 0, GL_RGBA, GL_FLOAT, nullptr);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gNormal, 0);
+            // Move new resources
+            gBuffer = other.gBuffer;
+            gPosition = other.gPosition;
+            gNormal = other.gNormal;
+            gColorSpecular = other.gColorSpecular;
+            rboDepth = other.rboDepth;
 
-        //Generate color/specular buffer
-        glGenTextures(1, &gColorSpecular);
-        glBindBuffer(GL_TEXTURE_2D, gColorSpecular);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT, 0, GL_RGBA, GL_FLOAT, nullptr);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, gColorSpecular, 0);
+            other.gBuffer = other.gPosition = other.gNormal = other.gColorSpecular = other.rboDepth = 0;
+        }
+        return *this;
+    }
 
-        constexpr GLuint attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-        glDrawBuffers(3, attachments);
-
-        //Attach depth buffer (Render buffer)
-        glGenRenderbuffers(1, &rboDepth);
-        glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT);
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
-
-        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-            std::cout << "\nFramebuffer not complete!";
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    ~DeferredBufferObjects() {
+        glDeleteFramebuffers(1, &gBuffer);
+        glDeleteTextures(1, &gPosition);
+        glDeleteTextures(1, &gNormal);
+        glDeleteTextures(1, &gColorSpecular);
+        glDeleteRenderbuffers(1, &rboDepth);
     }
 };
 

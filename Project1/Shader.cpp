@@ -37,26 +37,26 @@ uint32_t Shader_Methods::compileShader(const char* source, const GLenum& type) {
 }
 
 void ShaderProgram::useShaderProgram() const {
-    glUseProgram(_shaderProgram);
+    glUseProgram(shaderProgram);
 }
 
 void ShaderProgram::setUniform1i(const char* name, int value) const {
-    uint32_t location = glGetUniformLocation(_shaderProgram, name);
+    uint32_t location = glGetUniformLocation(shaderProgram, name);
     glUniform1i(location, value);
 }
 
 void ShaderProgram::setUniform1f(const char* name, float value) const {
-    uint32_t location = glGetUniformLocation(_shaderProgram, name);
+    uint32_t location = glGetUniformLocation(shaderProgram, name);
     glUniform1f(location, value);
 }
 
 void ShaderProgram::setUniformVec3(const char* name, const glm::vec3& vector) const {
-    uint32_t location = glGetUniformLocation(_shaderProgram, name);
+    uint32_t location = glGetUniformLocation(shaderProgram, name);
     glUniform3fv(location, 1, glm::value_ptr(vector));
 }
 
 void ShaderProgram::setUniformMat4(const char* name, const glm::mat4& matrix) const {
-    uint32_t location = glGetUniformLocation(_shaderProgram, name);
+    uint32_t location = glGetUniformLocation(shaderProgram, name);
     glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
 }
 
@@ -70,12 +70,12 @@ ShaderProgram::ShaderProgram(const char* vertexPath, const char* fragmentPath) {
     auto vertexShader     = Shader_Methods::compileShader(vertexCode.c_str(), GL_VERTEX_SHADER);
     auto fragmentShader   = Shader_Methods::compileShader(fragmentCode.c_str(), GL_FRAGMENT_SHADER);
 
-    _shaderProgram = glCreateProgram();
-    glAttachShader(_shaderProgram, vertexShader);
-    glAttachShader(_shaderProgram, fragmentShader);
-    glLinkProgram(_shaderProgram);
+    shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram);
 
-    Shader_Methods::handleFailedShaderProgramCompilation(_shaderProgram);
+    Shader_Methods::handleFailedShaderProgramCompilation(shaderProgram);
 
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);

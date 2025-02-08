@@ -24,11 +24,6 @@ struct IndirectRendering {
 	uint32_t indirectBuffer = 0, modelUniformBuffer = 0;
 };
 
-struct Skybox {
-	DrawableBufferObjects skyboxBuffers{};
-	ShaderProgram skyboxShader{};
-};
-
 using UniformsVEC3 = std::pair<const char*, glm::vec3>;
 using Uniforms1F = std::pair<const char*, float>;
 
@@ -42,6 +37,7 @@ private:
 	void updateCameraChunkPos(const float_VEC& cameraPos);
 
 	void renderChunks(const uint32_t& vpUniformBuffer, const float_VEC& cameraPos, const Frustum& cameraFrustum);
+	void renderQuad() const;
 	void renderSkybox(const glm::mat4& view, const glm::mat4& projection) const;
 
 	std::array<uint8_t, ChunkConstants::Dimension_2DSize> sampleHeightmap(const siv::PerlinNoise& perlin, uint32_t baseTerrainElevation, const float_VEC& chunkOffset);
@@ -51,15 +47,25 @@ private:
 	WorldChunks _worldChunks{};
 	ChunkMeshes _chunkMeshes{};
 
-	Skybox _skybox{};
+	struct DeferredRendering {
+		DeferredBufferObjects buffers{};
+		ShaderProgram geometryShader{};
+		ShaderProgram deferredShader{};
+	} _deferred;
+
+	struct Skybox {
+		DrawableBufferObjects buffers{};
+		ShaderProgram shader{};
+	} _skybox{};
+
 	int32_VEC _cameraChunkPos{};
 	DrawableBufferObjects _worldBuffers{};
-	std::pair<uint32_t, uint32_t> _worldVerticesIndices = { 0, 0 };
-	ShaderProgram _worldShader{};
+	uint32_t _numVertices = 0;
+	uint32_t _numIndices = 0;
 	ShaderProgram _wireframeShader{};
 	Texture _textureAtlas{};
 public:
-	World(ShaderProgram worldShader, Texture textureAtlas);
+	World();
 	void generateChunks(int gridSize, int verticalSize);
 	void render(const Camera& camera, const Frustum& cameraFrustum, bool wireframeMode);
 
@@ -72,9 +78,10 @@ public:
 		glDeleteBuffers(1, &_indirect.indirectBuffer);
 		glDeleteBuffers(1, &_indirect.modelUniformBuffer);
 
-		glDeleteProgram(_skybox.skyboxShader._shaderProgram);
-		glDeleteProgram(_worldShader._shaderProgram);
-		glDeleteProgram(_wireframeShader._shaderProgram);
+		glDeleteProgram(_skybox.shader.shaderProgram);
+		glDeleteProgram(_deferred.geometryShader.shaderProgram);
+		glDeleteProgram(_deferred.deferredShader.shaderProgram);
+		glDeleteProgram(_wireframeShader.shaderProgram);
 	}
 };
 

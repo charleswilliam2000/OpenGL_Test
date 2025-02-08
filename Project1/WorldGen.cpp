@@ -85,7 +85,7 @@ void World::generateChunks(int gridSize, int verticalSize)
 
 	const int horizontalCenter = gridSize / 2; // 3 = 1; 5 = 2; 7 = 3;
 	const int verticalCenter = verticalSize / 2;
-	const uint32_t baseTerrainElevation = verticalCenter * 20;
+	const uint32_t baseTerrainElevation = static_cast<uint32_t>(verticalCenter) * 16u;
 
 	constexpr std::array<std::pair<FACES, int32_VEC>, 6> neighborOffsets = { {
 		{FACES::WEST,	{-1, 0, 0}},
@@ -191,7 +191,7 @@ void World::generateChunks(int gridSize, int verticalSize)
 		auto numVertices = static_cast<uint32_t>(chunkVertices.size());
 		auto numIndices = static_cast<uint32_t>(chunkIndices.size());
 
-		_worldVerticesIndices.first += numVertices; _worldVerticesIndices.second += numIndices;
+		_numVertices += numVertices; _numIndices += numIndices;
 		_chunkMeshes[i].numVerticesIndices = std::make_pair(numVertices, numIndices);
 
 		renderedVertices.insert(renderedVertices.end(), chunkVertices.begin(), chunkVertices.end());

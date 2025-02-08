@@ -36,17 +36,17 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="voxel_vertex_shader.glsl">
+    <None Include="deferred_vertex_shader.glsl">
       <Filter>Source Files\Shaders</Filter>
     </None>
-    <None Include="voxel_fragment_shader.glsl">
+    <None Include="deferred_fragment_shader.glsl">
       <Filter>Source Files\Shaders</Filter>
     </None>
     <None Include="packages.config" />
-    <None Include="light_vertex_shader.glsl">
+    <None Include="g_vertex_shader.glsl">
       <Filter>Source Files\Shaders</Filter>
     </None>
-    <None Include="light_fragment_shader.glsl">
+    <None Include="g_fragment_shader.glsl">
       <Filter>Source Files\Shaders</Filter>
     </None>
     <None Include="wireframe_vertex_shader.glsl">
