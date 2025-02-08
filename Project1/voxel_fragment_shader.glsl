@@ -77,6 +77,4 @@ void main()
     vec3 norm = normalize(Normal);
     vec3 viewDir = normalize(cameraPos - FragPos);
 
-    vec3 result = calculateDirLight(directional_light, norm, viewDir);
-    fragColors = texture(myTextures, vec3(TextureCoords, layerIndex)) * vec4(result, 1.0);
-}
+    FragColors = texture(textureAtlas, vec3(LayerIndex))
