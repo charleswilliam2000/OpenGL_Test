@@ -1,16 +1,7 @@
 #include "Buffers.h"
 
-namespace Attributes_Details {
-    std::array<VertexAttributes, 1> voxelPackedAttributes = {
-        VertexAttributes{0, 1, GL_UNSIGNED_INT,  GL_FALSE, sizeof(Vertex), (void*)0 },            
-    };
 
-   std::array<VertexAttributes, 1> voxelFloatAttributes = {
-        VertexAttributes{0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0 }
-    };
-}
-
-BufferObjects::BufferObjects(
+DrawableBufferObjects::DrawableBufferObjects(
     const std::vector<Vertex>& vertex, 
     const std::array<VertexAttributes, 1>& attributes, 
     const std::vector<uint32_t>& indices)
@@ -26,8 +17,10 @@ BufferObjects::BufferObjects(
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32_t), indices.data(), GL_STATIC_DRAW);
 
-    glVertexAttribIPointer(attributes[0].index, attributes[0].componentCount, attributes[0].type, attributes[0].stride, attributes[0].offset);
-    glEnableVertexAttribArray(attributes[0].index);
+    for (const auto& attrib : attributes) {
+        glVertexAttribIPointer(attrib.index, attrib.componentCount, attrib.type, attrib.stride, attrib.offset);
+        glEnableVertexAttribArray(attrib.index);
+    }
   
     glBindVertexArray(0);
 }

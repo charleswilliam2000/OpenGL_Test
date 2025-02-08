@@ -24,6 +24,11 @@ struct IndirectRendering {
 	uint32_t indirectBuffer = 0, modelUniformBuffer = 0;
 };
 
+struct Skybox {
+	DrawableBufferObjects skyboxBuffers{};
+	ShaderProgram skyboxShader{};
+};
+
 using UniformsVEC3 = std::pair<const char*, glm::vec3>;
 using Uniforms1F = std::pair<const char*, float>;
 
@@ -33,10 +38,10 @@ class World {
 	using PointLightPositions = std::vector<glm::vec3>;
 private:
 	void setDirectionalLightUniform() const;
-	void setPointLightsUniform() const;
 	void initializeWorldVPUniformBuffer(uint32_t& vpUniformBuffer, glm::mat4*& vpPersistentPtr) const;
-	void renderChunks(const uint32_t& vpUniformBuffer, const Frustum& cameraFrustum) const;
-	void renderPointLight(const uint32_t& vpUniformBuffer) const;
+	void updateCameraChunkPos(const float_VEC& cameraPos);
+
+	void renderChunks(const uint32_t& vpUniformBuffer, const float_VEC& cameraPos, const Frustum& cameraFrustum);
 	void renderSkybox(const glm::mat4& view, const glm::mat4& projection) const;
 
 	std::array<uint8_t, ChunkConstants::Dimension_2DSize> sampleHeightmap(const siv::PerlinNoise& perlin, uint32_t baseTerrainElevation, const float_VEC& chunkOffset);
@@ -45,24 +50,13 @@ private:
 
 	WorldChunks _worldChunks{};
 	ChunkMeshes _chunkMeshes{};
-	
+
+	Skybox _skybox{};
+	int32_VEC _cameraChunkPos{};
+	DrawableBufferObjects _worldBuffers{};
 	std::pair<uint32_t, uint32_t> _worldVerticesIndices = { 0, 0 };
-	struct PointLights {
-		PointLightPositions positions{};
-		BufferObjects pointLightBuffers{};
-		ShaderProgram pointLightShader{};
-	} _pointLights;
-
-	struct Skybox {
-		BufferObjects skyboxBuffers{};
-		ShaderProgram skyboxShader{};
-	} _skybox;
-
-	BufferObjects _worldBuffers{};
 	ShaderProgram _worldShader{};
-
 	ShaderProgram _wireframeShader{};
-
 	Texture _textureAtlas{};
 public:
 	World(ShaderProgram worldShader, Texture textureAtlas);
@@ -78,7 +72,6 @@ public:
 		glDeleteBuffers(1, &_indirect.indirectBuffer);
 		glDeleteBuffers(1, &_indirect.modelUniformBuffer);
 
-		glDeleteProgram(_pointLights.pointLightShader._shaderProgram);
 		glDeleteProgram(_skybox.skyboxShader._shaderProgram);
 		glDeleteProgram(_worldShader._shaderProgram);
 		glDeleteProgram(_wireframeShader._shaderProgram);

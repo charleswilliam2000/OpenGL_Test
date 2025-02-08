@@ -4,11 +4,11 @@ std::array<uint8_t, ChunkConstants::Dimension_2DSize> World::sampleHeightmap(con
 {
 	std::array<uint8_t, ChunkConstants::Dimension_2DSize> heightmap{};
 
-	constexpr double scale = 30.0, persistence = 0.5, lacunuarity = 1.5;
+	constexpr double scale = 40.0, persistence = 0.5, lacunuarity = 1.25;
 	constexpr double continentalnessOffset = 1.0, erosionOffset = 244.0, elevationOffset = -111.0;
 
 	auto sampleHeightNoise = [&](double globalX, double globalZ) -> double {
-		double frequency = 1.0, amplitude = 1.0;
+		double frequency = 1.0, amplitude = 1.5;
 		double noiseHeight = 0.0;
 		
 		for (size_t octave = 0; octave < 4; octave++) {
@@ -25,9 +25,9 @@ std::array<uint8_t, ChunkConstants::Dimension_2DSize> World::sampleHeightmap(con
 		};
 
 	auto getMaxHeight = [&](double continentalness, double elevation, double erosion, size_t maxHeight) -> double {
-		const auto normalizedContinentalness = std::tanh(continentalness);
-		const auto normalizedErosion = std::pow(1 - (std::tanh(erosion) * std::tanh(erosion)), 2.0);
-		const auto normalizedElevation = std::pow(1 - (std::tanh(0.75 * elevation) * std::tanh(0.75 * elevation)), 2.0);
+		const auto normalizedContinentalness = 1.0 - std::tanh(continentalness);
+		const auto normalizedErosion = std::pow(1.0 - (std::tanh(1.25 * erosion) * std::tanh(1.25 * erosion)), 2.0);
+		const auto normalizedElevation = std::pow(1.0 - (std::tanh(1.5 * elevation) * std::tanh(1.5 * elevation)), 2.0);
 		
 		double clampedVal = std::min(std::max((normalizedContinentalness - 4.0 * normalizedErosion) / (-2.0 * normalizedElevation - 4.0 * normalizedErosion), 0.0), 1.0);
 		double smoothstepVal = 1.0 - (clampedVal * clampedVal * clampedVal * (clampedVal * (6.0 * clampedVal - 15.0) + 10.0));
@@ -43,7 +43,7 @@ std::array<uint8_t, ChunkConstants::Dimension_2DSize> World::sampleHeightmap(con
 			const double globalZ = chunkOffset.z + static_cast<double>(z);
 			const double heightNoise = sampleHeightNoise(globalX, globalZ);
 
-			double frequency = 1.0, amplitude = 2.0, continentalness = 0.0, erosion = 0.0, elevation = 0.0;
+			double frequency = 1.0, amplitude = 1.5, continentalness = 0.0, erosion = 0.0, elevation = 0.0;
 			for (size_t octave = 0; octave < 4; octave++) {
 				const auto sampleContinentalnessX = ((globalX + continentalnessOffset) / scale) * frequency;
 				const auto sampleContinentalnessZ = ((globalZ + continentalnessOffset) / scale) * frequency;
@@ -126,7 +126,7 @@ void World::generateChunks(int gridSize, int verticalSize)
 					};
 
 					size_t chunkIndex = chunkY * (gridSize * gridSize) + i;
-					_worldChunks[chunkIndex].generate(perlin, chunk3DOffset, heightmap, chunkY);
+					_worldChunks[chunkIndex].generate(perlin, chunk3DOffset, heightmap);
 
 					for (const auto& neighbor : neighborOffsets) {
 
@@ -213,7 +213,7 @@ void World::generateChunks(int gridSize, int verticalSize)
 	glBindBuffer(GL_UNIFORM_BUFFER, _indirect.modelUniformBuffer);
 	glBufferData(GL_UNIFORM_BUFFER, _indirect.modelMatrices.size() * sizeof(glm::mat4), _indirect.modelMatrices.data(), GL_STATIC_DRAW);
 
-	_worldBuffers = BufferObjects(
+	_worldBuffers = DrawableBufferObjects(
 		renderedVertices,
 		Attributes_Details::voxelPackedAttributes,
 		renderedIndices

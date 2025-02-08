@@ -14,31 +14,6 @@ void World::setDirectionalLightUniform() const {
 		_worldShader.setUniformVec3(dir.first, dir.second);
 }
 
-void World::setPointLightsUniform() const {
-	std::array<UniformsVEC3, 4> pointLightUniformsVEC3 = { 
-		{
-			{ "point_light[0].position",	glm::vec3(23.0f, 23.0f, 23.0f)	},
-			{ "point_light[0].ambient",		glm::vec3(0.05f, 0.05f, 0.05f) },
-			{ "point_light[0].diffuse",		glm::vec3(0.8f, 0.8f, 0.8f)	   },
-			{ "point_light[0].specular",	glm::vec3(1.0f, 1.0f, 1.0f)	   }
-		} 
-	};
-	
-	for (const auto& point : pointLightUniformsVEC3)
-		_worldShader.setUniformVec3(point.first, point.second);
-
-	std::array<Uniforms1F, 3> pointLightUniform1F = { 
-		{
-			{ "point_light[0].constant",	0.5f },
-			{ "point_light[0].linear",		0.09f },
-			{ "point_light[0].quadratic",	0.032f },
-		} 
-	};
-
-	for (const auto& point : pointLightUniform1F)
-		_worldShader.setUniform1f(point.first, point.second);
-}
-
 void World::initializeWorldVPUniformBuffer(uint32_t& vpUniformBuffer, glm::mat4*& vpPersistentPtr) const {
 	glGenBuffers(1, &vpUniformBuffer);
 	glBindBuffer(GL_UNIFORM_BUFFER, vpUniformBuffer);
@@ -57,36 +32,32 @@ void World::initializeWorldVPUniformBuffer(uint32_t& vpUniformBuffer, glm::mat4*
 	if (!vpPersistentPtr) throw std::runtime_error("Unable to initialize vpPersistentPtr!");
 }
 
-void World::renderChunks(const uint32_t& vpUniformBuffer, const Frustum& cameraFrustum) const
+void World::updateCameraChunkPos(const float_VEC& cameraPos) {
+	_cameraChunkPos.x = (cameraPos.x > 0) ? static_cast<int>(cameraPos.x / 16.0f) : static_cast<int>(cameraPos.x / 16.0f) - 1;
+	_cameraChunkPos.y = (cameraPos.x > 0) ? static_cast<int>(cameraPos.y / 16.0f) : static_cast<int>(cameraPos.y / 16.0f) - 1;
+	_cameraChunkPos.z = (cameraPos.x > 0) ? static_cast<int>(cameraPos.z / 16.0f) : static_cast<int>(cameraPos.z / 16.0f) - 1;
+
+	_cameraChunkPos.x *= ChunkConstants::Dimension_1DSize;
+	_cameraChunkPos.y *= ChunkConstants::Dimension_1DSize;
+	_cameraChunkPos.z *= ChunkConstants::Dimension_1DSize;
+}
+
+void World::renderChunks(const uint32_t& vpUniformBuffer, const float_VEC& cameraPos, const Frustum& cameraFrustum)
 {
 	GLuint transformBlockIndex = glGetUniformBlockIndex(_worldShader._shaderProgram, "ModelMatrices");
 	GLuint vpBlockIndex = glGetUniformBlockIndex(_worldShader._shaderProgram, "VP_Matrices");
 	glBindBufferBase(GL_UNIFORM_BUFFER, transformBlockIndex, _indirect.modelUniformBuffer);
 	glBindBufferBase(GL_UNIFORM_BUFFER, vpBlockIndex, vpUniformBuffer);
 
-	const size_t numChunks = _chunkMeshes.size();
-	for (size_t i = 0; i < numChunks; i++) {
-		AABB chunkAABB = _chunkMeshes[i].getBoundingBox();
-		_indirect.indirectBufferPersistentPtr[i].instanceCount = (chunkAABB.isOutsideFrustum(cameraFrustum)) ? 0 : 1;
+	updateCameraChunkPos(cameraPos);
+	for (size_t i = 0; i < _chunkMeshes.size(); i++) {
+		bool outsideFrustum = (_chunkMeshes[i].pos.z < _cameraChunkPos.z) ? true : _chunkMeshes[i].getBoundingBox().isOutsideFrustum(cameraFrustum);
+		_indirect.drawCommands[i].instanceCount = (outsideFrustum) ? 0 : 1;
 	}
 
 	glBindVertexArray(_worldBuffers.VAO);
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, _indirect.indirectBuffer);
 	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, _chunkMeshes.size(), 0);
-	glBindVertexArray(0);
-}
-
-void World::renderPointLight(const uint32_t& vpUniformBuffer) const
-{
-	_pointLights.pointLightShader.useShaderProgram();
-	uint32_t pointlight_vpBlockIndex = glGetUniformBlockIndex(_pointLights.pointLightShader._shaderProgram, "VP_Matrices");
-	glBindBufferBase(GL_UNIFORM_BUFFER, pointlight_vpBlockIndex, vpUniformBuffer);
-
-	glm::mat4 lightSourceModel = glm::translate(glm::mat4(1.0f), glm::vec3(19.0f));
-	_pointLights.pointLightShader.setUniformMat4("model", lightSourceModel);
-
-	glBindVertexArray(_pointLights.pointLightBuffers.VAO);
-	glDrawElements(GL_TRIANGLES, Shape_Indices::Cube, GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
 }
 
@@ -103,13 +74,6 @@ void World::renderSkybox(const glm::mat4& view, const glm::mat4& projection) con
 
 World::World(ShaderProgram worldShader, Texture textureAtlas)
 	: 
-	_pointLights(
-		{ 
-			{}, 
-			{ Shapes::base_cube_vertices, Attributes_Details::voxelFloatAttributes, Shapes::cube_indices }, 
-			{ "light_vertex_shader.glsl", "light_fragment_shader.glsl" } 
-		}
-	), 
 	_skybox(
 		{ 
 			{ Shapes::base_cube_vertices, Attributes_Details::voxelFloatAttributes, Shapes::skybox_indices },
@@ -122,7 +86,7 @@ World::World(ShaderProgram worldShader, Texture textureAtlas)
 }
 
 void World::render(const Camera& camera, const Frustum& cameraFrustum, bool wireframeMode) {
-
+	float_VEC cameraPos = camera.getVector(CameraVectors::POS);
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)Constants::WINDOW_WIDTH / (float)Constants::WINDOW_HEIGHT, 0.1f, 100.0f);
 	glm::mat4 view = camera.updateCameraView();
 
@@ -142,14 +106,12 @@ void World::render(const Camera& camera, const Frustum& cameraFrustum, bool wire
 	else {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		_worldShader.useShaderProgram();
-		_worldShader.setUniformVec3("cameraPos", camera.getVector(CameraVectors::POS));
+		_worldShader.setUniformVec3("cameraPos", cameraPos);
 
 		setDirectionalLightUniform();
-		setPointLightsUniform();
 	}
 	Texture_Methods::activateTexture(_textureAtlas._textureID, GL_TEXTURE0);
 
-	renderChunks(vpUniformBuffer, cameraFrustum);
-	renderPointLight(vpUniformBuffer);
+	renderChunks(vpUniformBuffer, cameraPos, cameraFrustum);
 	renderSkybox(view, projection);
 }

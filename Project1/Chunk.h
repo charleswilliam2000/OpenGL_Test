@@ -79,17 +79,9 @@ struct WorldChunk {
 		return blocks[y][z].getID(x) != BLOCK_ID::AIR;
 	}
 
-	uint32_t getVisibleFaces(
-		const uint8_VEC& block_coordinate,
-		const uint8_VEC& chunkMinBounds,
-		const uint8_VEC& chunkMaxBounds,
-		const std::function<bool(const FACES& face, uint8_VEC pos)>& getNeighborChunkBlock
-	) const;
-
 	void generate(
 		const siv::PerlinNoise& perlin, const float_VEC& chunkOffset, 
-		const std::array<uint8_t, ChunkConstants::Dimension_2DSize>& heightmap, 
-		int chunkY
+		const std::array<uint8_t, ChunkConstants::Dimension_2DSize>& heightmap
 	);
 };
 
@@ -100,8 +92,8 @@ struct ChunkMesh {
 	std::pair<uint32_t, uint32_t> numVerticesIndices = { 0, 0 };
 
 	ChunkMesh() {}
-
 	void addFace(const uint8_VEC& blockWorldPos, const Face_Data& faceData, const BLOCK_ID& type, uint32_t& vertexOffset);
+	void addVisibleFaces(const WorldChunk& worldChunk, const BLOCK_ID& blockType, const uint8_VEC& blockCoordinate, uint32_t& vertexOffset);
 	void generate(const WorldChunk& worldChunk);
 	AABB getBoundingBox() const {
 		float_VEC worldMin = pos;

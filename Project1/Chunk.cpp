@@ -1,92 +1,99 @@
 #include "Chunk.h"
 
-uint32_t WorldChunk::getVisibleFaces(
-	const uint8_VEC& block_coordinate, 
-	const uint8_VEC& chunkMinBounds, 
-	const uint8_VEC& chunkMaxBounds, 
-	const std::function<bool(const FACES& face, uint8_VEC pos)>& getNeighborChunkBlock) const
+void ChunkMesh::addVisibleFaces(
+	const WorldChunk& worldChunk,
+	const BLOCK_ID& blockType,
+	const uint8_VEC& blockCoordinate,
+	uint32_t& vertexOffset
+) 
 {
-	
+	uint8_VEC chunkMin = { 0, 0, 0 };
+	uint8_VEC chunkMax = { 15, 15, 15 };
+
+	auto getNeighborChunkBlock = [&](const FACES& face, uint8_VEC pos) -> bool {
+		switch (face) {
+		case FACES::WEST:
+			return worldChunk.neighborChunks.neighbors[static_cast<int>(face)] && worldChunk.neighborChunks.neighbors[static_cast<int>(face)]->isBlockSolid(15, pos.y, pos.z);
+		case FACES::BOTTOM:
+			return worldChunk.neighborChunks.neighbors[static_cast<int>(face)] && worldChunk.neighborChunks.neighbors[static_cast<int>(face)]->isBlockSolid(pos.x, 15, pos.z);
+		case FACES::NORTH:
+			return worldChunk.neighborChunks.neighbors[static_cast<int>(face)] && worldChunk.neighborChunks.neighbors[static_cast<int>(face)]->isBlockSolid(pos.x, pos.y, 15);
+		case FACES::EAST:
+			return worldChunk.neighborChunks.neighbors[static_cast<int>(face)] && worldChunk.neighborChunks.neighbors[static_cast<int>(face)]->isBlockSolid(0, pos.y, pos.z);
+		case FACES::TOP:
+			return worldChunk.neighborChunks.neighbors[static_cast<int>(face)] && worldChunk.neighborChunks.neighbors[static_cast<int>(face)]->isBlockSolid(pos.x, 0, pos.z);
+		case FACES::SOUTH:
+			return worldChunk.neighborChunks.neighbors[static_cast<int>(face)] && worldChunk.neighborChunks.neighbors[static_cast<int>(face)]->isBlockSolid(pos.x, pos.y, 0);
+		default:
+			throw std::runtime_error("\nUnable to deduce face!");
+		}
+	};
+
 	uint8_t
-		x = block_coordinate.x,
-		y = block_coordinate.y,
-		z = block_coordinate.z;
+		x = blockCoordinate.x,
+		y = blockCoordinate.y,
+		z = blockCoordinate.z;
 
-	uint32_t numVisibleFaces = 0;
-
-	if (x == chunkMinBounds.x) { // West
-		if (!getNeighborChunkBlock(FACES::WEST, block_coordinate)) {
-			numVisibleFaces *= 10;
-			numVisibleFaces += 1;
+	if (x == chunkMin.x) { // West
+		if (!getNeighborChunkBlock(FACES::WEST, {x, y, z})) {
+			addFace({ x, y, z }, FACE_DATA[static_cast<int>(FACES::WEST)], blockType, vertexOffset);
 		}
 	}
-	else if (!isBlockSolid(x - 1, y, z)) {
-		numVisibleFaces *= 10;
-		numVisibleFaces += 1;
+	else if (!worldChunk.isBlockSolid(x - 1, y, z)) {
+		addFace({ x, y, z }, FACE_DATA[static_cast<int>(FACES::WEST)], blockType, vertexOffset);
 	}
 
-	if (y == chunkMinBounds.y) { // Bottom
-		if (!getNeighborChunkBlock(FACES::BOTTOM, block_coordinate)) {
-			numVisibleFaces *= 10;
-			numVisibleFaces += 2;
+	if (y == chunkMin.y) { // Bottom
+		if (!getNeighborChunkBlock(FACES::BOTTOM, { x, y, z })) {
+			addFace({ x, y, z }, FACE_DATA[static_cast<int>(FACES::BOTTOM)], blockType, vertexOffset);
+
 		}
 	}
-	else if (!isBlockSolid(x, y - 1, z)) {
-		numVisibleFaces *= 10;
-		numVisibleFaces += 2;
+	else if (!worldChunk.isBlockSolid(x, y - 1, z)) {
+		addFace({ x, y, z }, FACE_DATA[static_cast<int>(FACES::BOTTOM)], blockType, vertexOffset);
 	}
 
-	if (z == chunkMinBounds.z) { // North
-		if (!getNeighborChunkBlock(FACES::NORTH, block_coordinate)) {
-			numVisibleFaces *= 10;
-			numVisibleFaces += 3;
+	if (z == chunkMin.z) { // North
+		if (!getNeighborChunkBlock(FACES::NORTH, { x, y, z })) {
+			addFace({ x, y, z }, FACE_DATA[static_cast<int>(FACES::NORTH)], blockType, vertexOffset);
+
 		}
 	}
-	else if (!isBlockSolid(x, y, z - 1)) {
-		numVisibleFaces *= 10;
-		numVisibleFaces += 3;
+	else if (!worldChunk.isBlockSolid(x, y, z - 1)) {
+		addFace({ x, y, z }, FACE_DATA[static_cast<int>(FACES::NORTH)], blockType, vertexOffset);
 	}
 
-	if (x == chunkMaxBounds.x) { // East
-		if (!getNeighborChunkBlock(FACES::EAST, block_coordinate)) {
-			numVisibleFaces *= 10;
-			numVisibleFaces += 4;
+	if (x == chunkMax.x) { // East
+		if (!getNeighborChunkBlock(FACES::EAST, { x, y, z })) {
+			addFace({ x, y, z }, FACE_DATA[static_cast<int>(FACES::EAST)], blockType, vertexOffset);
 		}
 	}
-	else if (!isBlockSolid(x + 1, y, z)) {
-		numVisibleFaces *= 10;
-		numVisibleFaces += 4;
+	else if (!worldChunk.isBlockSolid(x + 1, y, z)) {
+		addFace({ x, y, z }, FACE_DATA[static_cast<int>(FACES::EAST)], blockType, vertexOffset);
 	}
 
-	if (y == chunkMaxBounds.y) { // Top
-		if (!getNeighborChunkBlock(FACES::TOP, block_coordinate)) {
-			numVisibleFaces *= 10;
-			numVisibleFaces += 5;
+	if (y == chunkMax.y) { // Top
+		if (!getNeighborChunkBlock(FACES::TOP, { x, y, z })) {
+			addFace({ x, y, z }, FACE_DATA[static_cast<int>(FACES::TOP)], blockType, vertexOffset);
 		}
 	}
-	else if (!isBlockSolid(x, y + 1, z)) {
-		numVisibleFaces *= 10;
-		numVisibleFaces += 5;
+	else if (!worldChunk.isBlockSolid(x, y + 1, z)) {
+		addFace({ x, y, z }, FACE_DATA[static_cast<int>(FACES::TOP)], blockType, vertexOffset);
 	}
 
-	if (z == chunkMaxBounds.y) { // South
-		if (!getNeighborChunkBlock(FACES::SOUTH, block_coordinate)) {
-			numVisibleFaces *= 10;
-			numVisibleFaces += 6;
+	if (z == chunkMax.y) { // South
+		if (!getNeighborChunkBlock(FACES::SOUTH, { x, y, z })) {
+			addFace({ x, y, z }, FACE_DATA[static_cast<int>(FACES::SOUTH)], blockType, vertexOffset);
 		}
 	}
-	else if (!isBlockSolid(x, y, z + 1)) {
-		numVisibleFaces *= 10;
-		numVisibleFaces += 6;
+	else if (!worldChunk.isBlockSolid(x, y, z + 1)) {
+		addFace({ x, y, z }, FACE_DATA[static_cast<int>(FACES::SOUTH)], blockType, vertexOffset);
 	}
-
-	return numVisibleFaces;
 }
 
 void WorldChunk::generate(
 	const siv::PerlinNoise& perlin, const float_VEC& chunkOffset, 
-	const std::array<uint8_t, ChunkConstants::Dimension_2DSize>& heightmap, 
-	int chunkY
+	const std::array<uint8_t, ChunkConstants::Dimension_2DSize>& heightmap
 )
 {
 	constexpr double scale = 30.0, persistence = 0.5, lacunuarity = 1.5;
@@ -193,42 +200,11 @@ void ChunkMesh::addFace(const uint8_VEC& blockWorldPos, const Face_Data& faceDat
 }
 
 void ChunkMesh::generate(const WorldChunk& worldChunk) {
-	uint8_VEC chunkMin = { 0, 0, 0 };
-	uint8_VEC chunkMax = { 15, 15, 15 };
 	uint32_t vertexOffset = 0;
-
-	auto getNeighborChunkBlock = [&](const FACES& face, uint8_VEC pos) -> bool {
-		switch (face) {
-		case FACES::WEST: 
-			return worldChunk.neighborChunks.neighbors[static_cast<int>(face)] && worldChunk.neighborChunks.neighbors[static_cast<int>(face)]->isBlockSolid(15, pos.y, pos.z);
-		case FACES::BOTTOM:
-			return worldChunk.neighborChunks.neighbors[static_cast<int>(face)] && worldChunk.neighborChunks.neighbors[static_cast<int>(face)]->isBlockSolid(pos.x, 15, pos.z);
-		case FACES::NORTH:
-			return worldChunk.neighborChunks.neighbors[static_cast<int>(face)] && worldChunk.neighborChunks.neighbors[static_cast<int>(face)]->isBlockSolid(pos.x, pos.y, 15);
-		case FACES::EAST:
-			return worldChunk.neighborChunks.neighbors[static_cast<int>(face)] && worldChunk.neighborChunks.neighbors[static_cast<int>(face)]->isBlockSolid(0, pos.y, pos.z);
-		case FACES::TOP:
-			return worldChunk.neighborChunks.neighbors[static_cast<int>(face)] && worldChunk.neighborChunks.neighbors[static_cast<int>(face)]->isBlockSolid(pos.x, 0, pos.z);
-		case FACES::SOUTH:
-			return worldChunk.neighborChunks.neighbors[static_cast<int>(face)] && worldChunk.neighborChunks.neighbors[static_cast<int>(face)]->isBlockSolid(pos.x, pos.y, 0);
-		default:
-			throw std::runtime_error("\nUnable to deduce face!");
-		}
-		};
-
 	auto& solidBlocks = worldChunk.solidBlocks;
 	for (const auto& solidBlock : solidBlocks) {
 		uint8_VEC blockCoordinate = solidBlock.first; 
 		BLOCK_ID blockType = solidBlock.second;
-
-		uint32_t visibleFaces = worldChunk.getVisibleFaces(blockCoordinate, chunkMin, chunkMax, getNeighborChunkBlock);
-		if (visibleFaces == 0) 
-			continue;
-
-		while (visibleFaces != 0) {
-			uint32_t currFace = (visibleFaces % 10) - 1; // Minus one because of added offset 
-			addFace(blockCoordinate, FACE_DATA[currFace], blockType, vertexOffset);
-			visibleFaces /= 10;
-		}
+		addVisibleFaces(worldChunk, blockType, blockCoordinate, vertexOffset);
 	}
 }

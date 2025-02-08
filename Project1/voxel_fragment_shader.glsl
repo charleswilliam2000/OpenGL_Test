@@ -78,8 +78,5 @@ void main()
     vec3 viewDir = normalize(cameraPos - FragPos);
 
     vec3 result = calculateDirLight(directional_light, norm, viewDir);
-    for(int i = 0; i < NUM_POINT_LIGHTS; i++)
-        result += calculatePointLight(point_light[i], norm, FragPos, viewDir);    
-    
     fragColors = texture(myTextures, vec3(TextureCoords, layerIndex)) * vec4(result, 1.0);
 }
