@@ -92,6 +92,8 @@ public:
         : gBuffer(other.gBuffer), rboDepth(other.rboDepth), gPosition(other.gPosition), gNormal(other.gNormal), gColorSpecular(other.gColorSpecular) {
         other.gBuffer = other.rboDepth = other.gPosition = other.gNormal = other.gColorSpecular = 0;
     }
+    DeferredBufferObjects(const DeferredBufferObjects&) = delete;
+    DeferredBufferObjects& operator=(const DeferredBufferObjects&) = delete;
 
     DeferredBufferObjects& operator=(DeferredBufferObjects&& other) noexcept {
         if (this != &other) {

@@ -45,5 +45,5 @@ void main()
     vec3 viewDir = normalize(cameraPos - FragPos);
     lighting += calculateDirLight(directional_light, Normal, viewDir);
 
-    FragColors = vec4(1.0, 0.0, 0.0, 1.0);
+    FragColors = vec4(Normal, 1.0);
 }

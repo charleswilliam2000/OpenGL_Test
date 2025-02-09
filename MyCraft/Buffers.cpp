@@ -48,7 +48,7 @@ DeferredBufferObjects::DeferredBufferObjects() {
     //Generate color/specular buffer
     glGenTextures(1, &gColorSpecular);
     glBindTexture(GL_TEXTURE_2D, gColorSpecular);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT, 0, GL_RGBA, GL_FLOAT, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, gColorSpecular, 0);

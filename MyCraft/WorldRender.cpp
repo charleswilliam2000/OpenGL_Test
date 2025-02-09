@@ -44,8 +44,8 @@ void World::updateCameraChunkPos(const float_VEC& cameraPos) {
 
 void World::renderChunks(const uint32_t& vpUniformBuffer, const float_VEC& cameraPos, const Frustum& cameraFrustum)
 {
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, _textureAtlas.textureID);
+	//glActiveTexture(GL_TEXTURE0);
+	//glBindTexture(GL_TEXTURE_2D_ARRAY, _textureAtlas.textureID);
 	const uint32_t& deferredGShader = _deferred.geometryShader.shaderProgram;
 
 	_deferred.geometryShader.useShaderProgram();
@@ -54,7 +54,7 @@ void World::renderChunks(const uint32_t& vpUniformBuffer, const float_VEC& camer
 	glBindBufferBase(GL_UNIFORM_BUFFER, transformBlockIndex, _indirect.modelUniformBuffer);
 	glBindBufferBase(GL_UNIFORM_BUFFER, vpBlockIndex, vpUniformBuffer);
 
-	// ----FRUSTUM CULLING----
+	// ---FRUSTUM CULLING---
 	updateCameraChunkPos(cameraPos);
 	for (size_t i = 0; i < _chunkMeshes.size(); i++) {
 		bool outsideFrustum = (_chunkMeshes[i].pos.z < _cameraChunkPos.z) ? true : _chunkMeshes[i].getBoundingBox().isOutsideFrustum(cameraFrustum);
@@ -64,30 +64,39 @@ void World::renderChunks(const uint32_t& vpUniformBuffer, const float_VEC& camer
 	// ---DRAW CHUNKS MULTI-INDIRECT---
 	glBindVertexArray(_worldBuffers.VAO);
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, _indirect.indirectBuffer);
-	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, _chunkMeshes.size(), 0);
+	//glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, _chunkMeshes.size(), 0);
 	glBindVertexArray(0);
-	glActiveTexture(0);
+	//glActiveTexture(0);
 }
 
-void World::renderQuad() const
-{
+void World::renderQuad() const {
 	static GLuint quadVAO = 0;
-	static GLuint quadVBO;
+	static GLuint quadVBO, quadEBO;
 	if (quadVAO == 0)
 	{
 		constexpr float quadVertices[] = {
 			// positions        // texture Coords
-			-1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
-			-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-			 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
-			 1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+			-1.0f, -1.0f, 0.0f,  0.0f, 0.0f,
+			-1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
+			 1.0f,  1.0f, 0.0f,  1.0f, 1.0f,
+			 1.0f, -1.0f, 0.0f,  1.0f, 0.0f,
+		};
+
+		constexpr uint32_t quadIndices[] = {
+			0, 2, 3,
+			0, 1, 2
 		};
 
 		glGenVertexArrays(1, &quadVAO);
 		glGenBuffers(1, &quadVBO);
+		glGenBuffers(1, &quadEBO);
+
 		glBindVertexArray(quadVAO);
 		glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, quadEBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(quadIndices), &quadIndices, GL_STATIC_DRAW);
+
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
 		glEnableVertexAttribArray(1);
@@ -95,7 +104,7 @@ void World::renderQuad() const
 		glBindVertexArray(0);
 	}
 	glBindVertexArray(quadVAO);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glDrawElements(GL_TRIANGLES, Shape_Indices::Rectangle, GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
 }
 
@@ -127,49 +136,70 @@ World::World()
 	_textureAtlas("TextureAtlas.jpg")
 {
 	_deferred.deferredShader.useShaderProgram();
-	_deferred.deferredShader.setUniform1i("textureAtlas", _textureAtlas.textureID);
 	_deferred.deferredShader.setUniform1i("gPosition", 0);
 	_deferred.deferredShader.setUniform1i("gNormal", 1);
 	_deferred.deferredShader.setUniform1i("gColorSpecular", 2);
 }
 
 void World::render(const Camera& camera, const Frustum& cameraFrustum, bool wireframeMode) {
-	float_VEC cameraPos = camera.getVector(CameraVectors::POS);
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)Constants::WINDOW_WIDTH / (float)Constants::WINDOW_HEIGHT, 0.1f, 100.0f);
-	glm::mat4 view = camera.updateCameraView();
-
-	static GLuint vpUniformBuffer;
-	static glm::mat4* vpPersistentPtr = nullptr;
-
-	if (!vpPersistentPtr) 
-		initializeWorldVPUniformBuffer(vpUniformBuffer, vpPersistentPtr);
-
-	vpPersistentPtr[0] = projection;
-	vpPersistentPtr[1] = view;
-
 	//---GEOMETRY PASS---
 	glBindFramebuffer(GL_FRAMEBUFFER, _deferred.buffers.gBuffer);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	renderChunks(vpUniformBuffer, cameraPos, cameraFrustum);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		// ---UPDATE VIEW & PROJECTION MATRICES USING PESISTENT MAPPING---
+		const glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)Constants::WINDOW_WIDTH / (float)Constants::WINDOW_HEIGHT, 0.1f, 100.0f);
+		const glm::mat4 view = camera.updateCameraView();
+		static GLuint vpUniformBuffer;
+		static glm::mat4* vpPersistentPtr = nullptr;
+		if (!vpPersistentPtr)
+			initializeWorldVPUniformBuffer(vpUniformBuffer, vpPersistentPtr);
+		vpPersistentPtr[0] = projection;
+		vpPersistentPtr[1] = view;
+
+		// ---UPLOAD MVP MATRICES TO GEOMETRY SHADER---
+		_deferred.geometryShader.useShaderProgram();
+		GLuint transformBlockIndex = glGetUniformBlockIndex(_deferred.geometryShader.shaderProgram, "ModelMatrices");
+		GLuint vpBlockIndex = glGetUniformBlockIndex(_deferred.geometryShader.shaderProgram, "VPMatrices");
+		glBindBufferBase(GL_UNIFORM_BUFFER, transformBlockIndex, _indirect.modelUniformBuffer);
+		glBindBufferBase(GL_UNIFORM_BUFFER, vpBlockIndex, vpUniformBuffer);
+
+		// ---FRUSTUM CULLING---
+		updateCameraChunkPos(camera.getVector(CameraVectors::POS));
+		for (size_t i = 0; i < _chunkMeshes.size(); i++) {
+			bool outsideFrustum = (_chunkMeshes[i].pos.z < _cameraChunkPos.z) ? true : _chunkMeshes[i].getBoundingBox().isOutsideFrustum(cameraFrustum);
+			_indirect.drawCommands[i].instanceCount = (outsideFrustum) ? 0 : 1;
+		}
+
+		// ---DRAW CHUNKS MULTI-INDIRECT---
+		glBindVertexArray(_worldBuffers.VAO);
+		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, _indirect.indirectBuffer);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, _chunkMeshes.size(), 0);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		glBindVertexArray(0);
 
 	//---LIGHTING PASS---
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	_deferred.deferredShader.useShaderProgram();
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, _deferred.buffers.gPosition);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, _deferred.buffers.gNormal);
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, _deferred.buffers.gColorSpecular);
-	setDirectionalLightUniform();
-	_deferred.deferredShader.setUniformVec3("cameraPos", cameraPos);
-
-	renderQuad();
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		_deferred.deferredShader.useShaderProgram();
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, _deferred.buffers.gPosition);
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, _deferred.buffers.gNormal);
+			glActiveTexture(GL_TEXTURE2);
+			glBindTexture(GL_TEXTURE_2D, _deferred.buffers.gColorSpecular);
+			setDirectionalLightUniform();
+			_deferred.deferredShader.setUniformVec3("cameraPos", camera.getVector(CameraVectors::POS));
+		renderQuad();
 
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, _deferred.buffers.gBuffer);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-	glBlitFramebuffer(0, 0, Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT, 0, 0, Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+		glBlitFramebuffer(
+			0, 0, Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT, 
+			0, 0, Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT, 
+			GL_DEPTH_BUFFER_BIT, GL_NEAREST
+		);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	renderSkybox(view, projection);
+
 }

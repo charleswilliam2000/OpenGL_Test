@@ -23,9 +23,9 @@ int main() {
         glCullFace(GL_FRONT);
 
         World world;
-        world.generateChunks(7, 7);
+        world.generateChunks(3, 3);
                             //Pos                           //Front                     //Up
-        Camera camera({ glm::vec3(0.0f, 30.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f) });
+        Camera camera({ glm::vec3(0.0f, 30.0f, 30.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f) });
         
         game.insertCamera(&camera);
         game.insertWorld(&world);

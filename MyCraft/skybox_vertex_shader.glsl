@@ -8,7 +8,7 @@ uniform mat4 view;
 out vec4 vertexColors;
 
 void main() {
-	vec4 pos = projection * view * vec4(aPos, 1.0f);
-	vertexColors = vec4(vec3(0.1, 0.8, 1), 1.0f);
+	vec4 pos = projection * view * vec4(aPos, 1.0);
+	vertexColors = vec4(vec3(0.1, 0.8, 1), 1.0);
 	gl_Position = pos.xyww;
 }

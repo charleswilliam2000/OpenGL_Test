@@ -31,9 +31,8 @@ void main() {
     float x = float((aPacked >> 0) & coord_mask);
     float y = float((aPacked >> 5) & coord_mask);
     float z = float((aPacked >> 10) & coord_mask);
-    vec3 aPos = vec3(x, y, z);
 
-	vec4 worldPos = model * vec4(aPos, 1.0);
+	vec4 worldPos = model * vec4(vec3(x, y, z), 1.0);
     FragPos = worldPos.xyz;
 
     float v = float((aPacked >> 18) & 1); 
@@ -43,5 +42,6 @@ void main() {
     int normals_mask = 7; // Binary: 111
     uint normals_index = uint((aPacked >> 15) & normals_mask);
     Normal = mat3(transpose(inverse(model))) * normalsArr[normals_index];
+
     gl_Position = projectionMatrix * viewMatrix * worldPos;
 }
