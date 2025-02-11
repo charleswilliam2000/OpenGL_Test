@@ -8,14 +8,9 @@
 
 #include "PerlinNoise.hpp"
 
-namespace ChunkConstants {
-    constexpr size_t Dimension_1DSize = 16;
-	constexpr size_t Dimension_2DSize = 256;
-	constexpr size_t Dimension_3DSize = 4096;
-}
 
 struct ChunkData {
-	using Vertices = std::vector<Vertex>;
+	using Vertices = std::vector<PackedVertex>;
 	Vertices chunk_vertices;
 
 	using Indices = std::vector<uint32_t>;
@@ -32,7 +27,7 @@ enum class BLOCK_ID : uint8_t {
 struct Block_ID {
 	uint64_t ID : 64; // 4 bits for every one block (Thus, 4 x 16 = 64 bits)
 	inline void setID(BLOCK_ID id, uint64_t x) {
-		if (x < ChunkConstants::Dimension_1DSize) {
+		if (x < CONSTANTS::Dimension_1DSize) {
 			uint64_t mask = ~(0xFULL); 
 			uint64_t shiftAmount = static_cast<uint64_t>(4) * x;
 
@@ -44,7 +39,7 @@ struct Block_ID {
 	}
 
 	inline BLOCK_ID getID(uint64_t x) const {
-		if (x < ChunkConstants::Dimension_1DSize) {
+		if (x < CONSTANTS::Dimension_1DSize) {
 			uint64_t shiftAmount = static_cast<uint64_t>(4) * x;
 			uint64_t mask = 0xFULL; // Mask for the lowest 4 bits
 
@@ -60,7 +55,7 @@ struct Block_ID {
 };
 
 struct WorldChunk {
-	using Blocks = std::array<std::array<Block_ID, ChunkConstants::Dimension_1DSize>, ChunkConstants::Dimension_1DSize>;
+	using Blocks = std::array<std::array<Block_ID, CONSTANTS::Dimension_1DSize>, CONSTANTS::Dimension_1DSize>;
 	using SolidBlocks = std::vector<std::pair<uint8_VEC, BLOCK_ID>>;
 
 	Blocks blocks{};
@@ -81,23 +76,22 @@ struct WorldChunk {
 
 	void generate(
 		const siv::PerlinNoise& perlin, const float_VEC& chunkOffset, 
-		const std::array<uint8_t, ChunkConstants::Dimension_2DSize>& heightmap
+		const std::array<uint8_t, CONSTANTS::Dimension_2DSize>& heightmap
 	);
 };
 
 struct ChunkMesh {
 	ChunkData chunkData{};
-	DrawableBufferObjects chunkBuffers{};
 	float_VEC pos{};
 	std::pair<uint32_t, uint32_t> numVerticesIndices = { 0, 0 };
 
 	ChunkMesh() {}
-	void addFace(const uint8_VEC& blockWorldPos, const Face_Data& faceData, const BLOCK_ID& type, uint32_t& vertexOffset);
+	void addFace(const uint8_VEC& blockWorldPos, const PackedFaceData& faceData, const BLOCK_ID& type, uint32_t& vertexOffset);
 	void addVisibleFaces(const WorldChunk& worldChunk, const BLOCK_ID& blockType, const uint8_VEC& blockCoordinate, uint32_t& vertexOffset);
 	void generate(const WorldChunk& worldChunk);
 	AABB getBoundingBox() const {
 		float_VEC worldMin = pos;
-		float_VEC worldMax = worldMin + float_VEC(static_cast<float>(ChunkConstants::Dimension_1DSize));
+		float_VEC worldMax = worldMin + float_VEC(static_cast<float>(CONSTANTS::Dimension_1DSize));
 
 		return { worldMin, worldMax };
 	}

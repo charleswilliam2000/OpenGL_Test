@@ -9,20 +9,9 @@
 #include <atomic>
 
 #include "Chunk.h"
+#include "Indirect.h"
 #include "Shader.h"
 #include "Texture.h"
-
-struct IndirectRendering {
-	struct DrawCommands {
-		uint32_t count, instanceCount, firstIndex, baseVertex, baseInstance;
-
-		DrawCommands(uint32_t count, uint32_t instanceCount, uint32_t firstIndex, uint32_t baseVertex, uint32_t baseInstance)
-			: count(count), instanceCount(instanceCount), firstIndex(firstIndex), baseVertex(baseVertex), baseInstance(baseInstance) { }
-	}; std::vector<DrawCommands> drawCommands;
-	std::vector<glm::mat4> modelMatrices;
-	IndirectRendering::DrawCommands* indirectBufferPersistentPtr = nullptr;
-	uint32_t indirectBuffer = 0, modelUniformBuffer = 0;
-};
 
 using UniformsVEC3 = std::pair<const char*, glm::vec3>;
 using Uniforms1F = std::pair<const char*, float>;
@@ -33,56 +22,40 @@ class World {
 	using PointLightPositions = std::vector<glm::vec3>;
 private:
 	void setDirectionalLightUniform() const;
-	void initializeWorldVPUniformBuffer(uint32_t& vpUniformBuffer, glm::mat4*& vpPersistentPtr) const;
 	void updateCameraChunkPos(const float_VEC& cameraPos);
 
-	void renderChunks(const uint32_t& vpUniformBuffer, const float_VEC& cameraPos, const Frustum& cameraFrustum);
 	void renderQuad() const;
 	void renderSkybox(const glm::mat4& view, const glm::mat4& projection) const;
 
-	std::array<uint8_t, ChunkConstants::Dimension_2DSize> sampleHeightmap(const siv::PerlinNoise& perlin, uint32_t baseTerrainElevation, const float_VEC& chunkOffset);
-
+	std::array<uint8_t, CONSTANTS::Dimension_2DSize> sampleHeightmap(const siv::PerlinNoise& perlin, uint32_t baseTerrainElevation, const float_VEC& chunkOffset);
+	
 	IndirectRendering _indirect;
 
-	WorldChunks _worldChunks{};
-	ChunkMeshes _chunkMeshes{};
+	UniformBufferObjects _vpUBO;
+	UniformBufferObjects _modelsUBO;
 
-	struct DeferredRendering {
-		DeferredBufferObjects buffers{};
-		ShaderProgram geometryShader{};
-		ShaderProgram deferredShader{};
-	} _deferred;
+	WorldChunks _worldChunks;
+	ChunkMeshes _chunkMeshes;
 
-	struct Skybox {
-		DrawableBufferObjects buffers{};
-		ShaderProgram shader{};
-	} _skybox{};
+	DrawableBufferObjects _world;
+	DrawableBufferObjects _skybox;
+	DeferredBufferObjects _deferred;
 
-	int32_VEC _cameraChunkPos{};
-	DrawableBufferObjects _worldBuffers{};
+	int32_VEC _cameraChunkPos;
+
 	uint32_t _numVertices = 0;
 	uint32_t _numIndices = 0;
-	ShaderProgram _wireframeShader{};
+
+	ShaderProgram _shaderGeometryPass;
+	ShaderProgram _shaderLightingPass;
+	ShaderProgram _skyboxShader;
+	ShaderProgram _wireframeShader;
+
 	Texture _textureAtlas{};
 public:
-	World();
+	World(int gridSize, int verticalSize);
 	void generateChunks(int gridSize, int verticalSize);
 	void render(const Camera& camera, const Frustum& cameraFrustum, bool wireframeMode);
-
-	~World() noexcept {
-		if (_indirect.indirectBufferPersistentPtr) {
-			glUnmapBuffer(_indirect.indirectBuffer);
-			_indirect.indirectBufferPersistentPtr = nullptr;
-		}
-
-		glDeleteBuffers(1, &_indirect.indirectBuffer);
-		glDeleteBuffers(1, &_indirect.modelUniformBuffer);
-
-		glDeleteProgram(_skybox.shader.shaderProgram);
-		glDeleteProgram(_deferred.geometryShader.shaderProgram);
-		glDeleteProgram(_deferred.deferredShader.shaderProgram);
-		glDeleteProgram(_wireframeShader.shaderProgram);
-	}
 };
 
 class ChunkGenerationThread {

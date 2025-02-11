@@ -1,84 +1,93 @@
 #ifndef BUFFERS_H
 #define BUFFERS_H
 
-#include "stdafx.h"
+#include <glad/glad.h>
+
 #include "Shape.h"
 
-struct VertexAttributes {
-    GLuint index{};
-    GLint componentCount{};
-    GLenum type{};
-    GLboolean normalized{};
-    GLsizei stride{};
-    const void* offset{};
+#include <array>
+#include <iostream>
+
+struct DrawableIntAttributes {
+    GLuint index;
+    GLuint size;
+    GLenum type;
+    GLsizei stride;
+    GLsizei offset;
 };
 
-namespace Attributes_Details {
-    constexpr std::array<VertexAttributes, 1> voxelPackedAttributes = {
-        VertexAttributes{ 0, 1, GL_UNSIGNED_INT,  GL_FALSE, sizeof(Vertex), (void*)0 }
-    };
-    constexpr std::array<VertexAttributes, 1> voxelFloatAttributes = {
-        VertexAttributes{ 0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0 }
-    };
+struct DrawableFloatAttributes {
+    GLuint index;
+    GLuint size;
+    GLenum type;
+    GLboolean normalized;
+    GLsizei stride;
+    GLsizei offset;  // Changed from const void* to std::size_t
+
+    constexpr DrawableFloatAttributes(GLuint index, GLuint size, GLenum type, GLboolean normalized, GLsizei stride, GLsizei offset)
+        : index(index), size(size), type(type), normalized(normalized), stride(stride), offset(offset) {
+    }
+};
+namespace DRAWABLE_ATTRIBUTES {
+    constexpr std::array<DrawableIntAttributes, 1> DRAWABLE_PACKED_ATTRIBUTES = { {
+            DrawableIntAttributes{0, 1, GL_UNSIGNED_INT, sizeof(PackedVertex), 0}
+    } };
+
+    constexpr std::array<DrawableFloatAttributes, 3> DRAWABLE_FLOAT_ATTRIBUTES = { {
+        DrawableFloatAttributes(0, 3, GL_FLOAT, GL_FALSE, sizeof(FloatVertex), 0),
+        DrawableFloatAttributes(1, 3, GL_FLOAT, GL_FALSE, sizeof(FloatVertex), 3 * sizeof(float)),
+        DrawableFloatAttributes(2, 2, GL_FLOAT, GL_FALSE, sizeof(FloatVertex), 6 * sizeof(float))
+    } };
 }
 struct DrawableBufferObjects {
 public:
-    GLuint VAO = 0, VBO = 0, EBO = 0;
+    GLuint vaoHandle = 0, vboHandle = 0, eboHandle = 0;
+    GLuint vboSize = 0, eboSize = 0;
 
     DrawableBufferObjects() {}
+    DrawableBufferObjects(size_t vboSize, const void* vboData, size_t eboSize, const void* eboData, const std::array<DrawableFloatAttributes, 3>& readAttribArr);
+    DrawableBufferObjects(size_t vboSize, const void* vboData, size_t eboSize, const void* eboData, const std::array<DrawableIntAttributes, 1>& readAttribArr);
 
-    DrawableBufferObjects(const std::vector<Vertex>& vertex, const std::array<VertexAttributes, 1>& attributes, const std::vector<uint32_t>& indices);
+    void generateBuffersF(size_t vboSize, const void* vboData, size_t eboSize, const void* eboData, const std::array<DrawableFloatAttributes, 3>& readAttribArr);
+    void generateBuffersI(size_t vboSize, const void* vboData, size_t eboSize, const void* eboData, const std::array<DrawableIntAttributes, 1>& readAttribArr);
 
-    DrawableBufferObjects(DrawableBufferObjects&& other) noexcept
-        : VAO(other.VAO), VBO(other.VBO), EBO(other.EBO) {
-        other.VAO = other.VBO = other.EBO = 0; 
+    void bindToDraw() const {
+        glBindVertexArray(vaoHandle);
     }
 
-    template <size_t arr1_size, size_t arr2_size>
-    DrawableBufferObjects(
-        const std::array<float, arr1_size>& vertexData,
-        const std::array<VertexAttributes, 1>& attributes,
-        const std::array<uint32_t, arr2_size>& indices) 
-    {
-        glGenVertexArrays(1, &VAO);
-        glGenBuffers(1, &VBO);
-        glGenBuffers(1, &EBO);
-
-        glBindVertexArray(VAO);
-
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, vertexData.size() * sizeof(float), vertexData.data(), GL_STATIC_DRAW);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32_t), indices.data(), GL_STATIC_DRAW);
-
-        for (const auto& attrib : attributes) {
-            glVertexAttribPointer(attrib.index, attrib.componentCount, attrib.type, attrib.normalized, attrib.stride, attrib.offset);
-            glEnableVertexAttribArray(attrib.index);
-        }
-        glBindVertexArray(0);
-    }
-
-    DrawableBufferObjects& operator=(DrawableBufferObjects&& other) noexcept {
-        if (this != &other) {
-            glDeleteVertexArrays(1, &VAO);
-            glDeleteBuffers(1, &VBO);
-            glDeleteBuffers(1, &EBO);
-
-            // Move new resources
-            VAO = other.VAO;
-            VBO = other.VBO;
-            EBO = other.EBO;
-
-            other.VAO = other.VBO = other.EBO = 0; 
-        }
-        return *this;
-    }
+    DrawableBufferObjects(const DrawableBufferObjects&) = delete;
+    DrawableBufferObjects& operator=(const DrawableBufferObjects&) = delete;
 
     ~DrawableBufferObjects() {
-        if (VAO) glDeleteVertexArrays(1, &VAO);
-        if (VBO) glDeleteBuffers(1, &VBO);
-        if (EBO) glDeleteBuffers(1, &EBO);
+        glDeleteVertexArrays(1, &vaoHandle);
+        glDeleteBuffers(1, &vboHandle);
+        glDeleteBuffers(1, &eboHandle);
+    }
+
+};
+
+struct UniformBufferObjects {
+public:
+    void* persistentPtr = nullptr;
+    GLuint handle = 0, bindingPoint = 0, bufferSize = 0;
+
+    UniformBufferObjects() {}
+    UniformBufferObjects(size_t size, GLuint bindingPoint, const void* data = nullptr);
+
+    void generateBuffersPersistent(size_t size, GLuint bindingPoint, const void* data = nullptr);
+
+    UniformBufferObjects(const UniformBufferObjects&) = delete;
+    UniformBufferObjects& operator=(const UniformBufferObjects&) = delete;
+
+    void bindToShader(GLuint shaderProgram, const char* blockName) {
+        GLuint blockIndex = glGetUniformBlockIndex(shaderProgram, blockName);
+        if (blockIndex != GL_INVALID_INDEX) {
+            glUniformBlockBinding(shaderProgram, blockIndex, bindingPoint);
+        }
+    }
+
+    ~UniformBufferObjects() {
+        glDeleteBuffers(1, &handle);
     }
 };
 
@@ -87,33 +96,13 @@ public:
     GLuint gBuffer = 0, rboDepth = 0;
     GLuint gPosition = 0, gNormal = 0, gColorSpecular = 0;
 
-    DeferredBufferObjects();
-    DeferredBufferObjects(DeferredBufferObjects&& other) noexcept
-        : gBuffer(other.gBuffer), rboDepth(other.rboDepth), gPosition(other.gPosition), gNormal(other.gNormal), gColorSpecular(other.gColorSpecular) {
-        other.gBuffer = other.rboDepth = other.gPosition = other.gNormal = other.gColorSpecular = 0;
-    }
+    DeferredBufferObjects() {}
+    DeferredBufferObjects(int windowWidth, int windowHeight);
+
+    void generateBuffers(int windowWidth, int windowHeight);
+
     DeferredBufferObjects(const DeferredBufferObjects&) = delete;
     DeferredBufferObjects& operator=(const DeferredBufferObjects&) = delete;
-
-    DeferredBufferObjects& operator=(DeferredBufferObjects&& other) noexcept {
-        if (this != &other) {
-            glDeleteFramebuffers(1, &gBuffer);
-            glDeleteTextures(1, &gPosition);
-            glDeleteTextures(1, &gNormal);
-            glDeleteTextures(1, &gColorSpecular);
-            glDeleteRenderbuffers(1, &rboDepth);
-
-            // Move new resources
-            gBuffer = other.gBuffer;
-            gPosition = other.gPosition;
-            gNormal = other.gNormal;
-            gColorSpecular = other.gColorSpecular;
-            rboDepth = other.rboDepth;
-
-            other.gBuffer = other.gPosition = other.gNormal = other.gColorSpecular = other.rboDepth = 0;
-        }
-        return *this;
-    }
 
     ~DeferredBufferObjects() {
         glDeleteFramebuffers(1, &gBuffer);

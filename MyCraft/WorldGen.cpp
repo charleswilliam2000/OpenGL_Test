@@ -1,8 +1,8 @@
 #include "World.h"
 
-std::array<uint8_t, ChunkConstants::Dimension_2DSize> World::sampleHeightmap(const siv::PerlinNoise& perlin, uint32_t baseTerrainElevation, const float_VEC& chunkOffset)
+std::array<uint8_t, CONSTANTS::Dimension_2DSize> World::sampleHeightmap(const siv::PerlinNoise& perlin, uint32_t baseTerrainElevation, const float_VEC& chunkOffset)
 {
-	std::array<uint8_t, ChunkConstants::Dimension_2DSize> heightmap{};
+	std::array<uint8_t, CONSTANTS::Dimension_2DSize> heightmap{};
 
 	constexpr double scale = 40.0, persistence = 0.5, lacunuarity = 1.25;
 	constexpr double continentalnessOffset = 1.0, erosionOffset = 244.0, elevationOffset = -111.0;
@@ -34,10 +34,10 @@ std::array<uint8_t, ChunkConstants::Dimension_2DSize> World::sampleHeightmap(con
 		return maxHeight * smoothstepVal;
 		};
 
-	for (uint8_t z = 0; z < ChunkConstants::Dimension_1DSize; z++) {
-		for (uint8_t x = 0; x < ChunkConstants::Dimension_1DSize; x++) {
+	for (uint8_t z = 0; z < CONSTANTS::Dimension_1DSize; z++) {
+		for (uint8_t x = 0; x < CONSTANTS::Dimension_1DSize; x++) {
 
-			uint32_t i = z * ChunkConstants::Dimension_1DSize + x;
+			uint32_t i = z * CONSTANTS::Dimension_1DSize + x;
 
 			const double globalX = chunkOffset.x + static_cast<double>(x);
 			const double globalZ = chunkOffset.z + static_cast<double>(z);
@@ -63,10 +63,10 @@ std::array<uint8_t, ChunkConstants::Dimension_2DSize> World::sampleHeightmap(con
 				frequency *= lacunuarity;
 			}
 
-			uint8_t height = static_cast<uint8_t>(heightNoise * getMaxHeight(continentalness, elevation, erosion, Constants::MAX_BLOCK_HEIGHT)) + baseTerrainElevation;
+			uint8_t height = static_cast<uint8_t>(heightNoise * getMaxHeight(continentalness, elevation, erosion, CONSTANTS::MAX_BLOCK_HEIGHT)) + baseTerrainElevation;
 
-			if (height > Constants::MAX_BLOCK_HEIGHT)
-				height = Constants::MAX_BLOCK_HEIGHT;
+			if (height > CONSTANTS::MAX_BLOCK_HEIGHT)
+				height = CONSTANTS::MAX_BLOCK_HEIGHT;
 
 			heightmap[i] = height;
 		}
@@ -110,9 +110,9 @@ void World::generateChunks(int gridSize, int verticalSize)
 			terrainFutures[i] = chunkThreadPool.enqueueTask([&, i, chunkX, chunkZ]() -> void {
 
 				float_VEC chunk2DOffset = {
-					static_cast<float>((chunkX - horizontalCenter) * static_cast<int>(ChunkConstants::Dimension_1DSize)),
+					static_cast<float>((chunkX - horizontalCenter) * static_cast<int>(CONSTANTS::Dimension_1DSize)),
 					0.0f,
-					static_cast<float>((chunkZ - horizontalCenter) * static_cast<int>(ChunkConstants::Dimension_1DSize))
+					static_cast<float>((chunkZ - horizontalCenter) * static_cast<int>(CONSTANTS::Dimension_1DSize))
 				};
 
 				auto heightmap = sampleHeightmap(perlin, baseTerrainElevation, chunk2DOffset);
@@ -121,7 +121,7 @@ void World::generateChunks(int gridSize, int verticalSize)
 
 					float_VEC chunk3DOffset = {
 						chunk2DOffset.x,
-						static_cast<float>((chunkY - verticalCenter) * static_cast<int>(ChunkConstants::Dimension_1DSize)),
+						static_cast<float>((chunkY - verticalCenter) * static_cast<int>(CONSTANTS::Dimension_1DSize)),
 						chunk2DOffset.z
 					};
 
@@ -145,7 +145,7 @@ void World::generateChunks(int gridSize, int verticalSize)
 					}
 
 					std::transform(heightmap.begin(), heightmap.end(), heightmap.begin(), [&](uint8_t height) {
-						return height -= (height > ChunkConstants::Dimension_1DSize) ? ChunkConstants::Dimension_1DSize : height;
+						return height -= (height > CONSTANTS::Dimension_1DSize) ? CONSTANTS::Dimension_1DSize : height;
 						});
 				}
 
@@ -166,9 +166,9 @@ void World::generateChunks(int gridSize, int verticalSize)
 				meshFutures[i] = chunkThreadPool.enqueueTask([&, i, chunkX, chunkY, chunkZ]() -> void { 
 
 					float_VEC chunkOffset = {
-						static_cast<float>((chunkX - horizontalCenter) * static_cast<int>(ChunkConstants::Dimension_1DSize)),
-						static_cast<float>((chunkY - verticalCenter) * static_cast<int>(ChunkConstants::Dimension_1DSize)),
-						static_cast<float>((chunkZ - horizontalCenter) * static_cast<int>(ChunkConstants::Dimension_1DSize))
+						static_cast<float>((chunkX - horizontalCenter) * static_cast<int>(CONSTANTS::Dimension_1DSize)),
+						static_cast<float>((chunkY - verticalCenter) * static_cast<int>(CONSTANTS::Dimension_1DSize)),
+						static_cast<float>((chunkZ - horizontalCenter) * static_cast<int>(CONSTANTS::Dimension_1DSize))
 					};
 
 					_chunkMeshes[i].pos = chunkOffset;
@@ -182,9 +182,14 @@ void World::generateChunks(int gridSize, int verticalSize)
 		future.get();
 	}
 
-
 	uint32_t vetexOffset = 0;
-	std::vector<Vertex> renderedVertices; std::vector<uint32_t> renderedIndices;
+	uint32_t firstIndexOffset = 0;
+
+	std::vector<PackedVertex> renderVertices; 
+	std::vector<uint32_t> renderIndices;
+
+	std::vector<IndirectRendering::DrawCommands> drawCommands(numChunks);
+	std::vector<glm::mat4> modelMatrices(numChunks);
 
 	for (size_t i = 0; i < numChunks; i++) {
 		const auto& [chunkVertices, chunkIndices] = _chunkMeshes[i].chunkData;
@@ -192,63 +197,38 @@ void World::generateChunks(int gridSize, int verticalSize)
 		auto numIndices = static_cast<uint32_t>(chunkIndices.size());
 
 		_numVertices += numVertices; _numIndices += numIndices;
-		_chunkMeshes[i].numVerticesIndices = std::make_pair(numVertices, numIndices);
-
-		renderedVertices.insert(renderedVertices.end(), chunkVertices.begin(), chunkVertices.end());
-		std::transform(chunkIndices.begin(), chunkIndices.end(), std::back_inserter(renderedIndices), [&](uint32_t index) {
+		renderVertices.insert(renderVertices.end(), chunkVertices.begin(), chunkVertices.end());
+		std::transform(chunkIndices.begin(), chunkIndices.end(), std::back_inserter(renderIndices), [&](uint32_t index) {
 			return index + vetexOffset;
 			});
 
-		_indirect.modelMatrices.push_back(
-			glm::translate(
-				glm::mat4(1.0f),
-				glm::vec3(_chunkMeshes[i].pos)
-			)
+		modelMatrices[i] = glm::translate(glm::mat4(1.0f), glm::vec3(_chunkMeshes[i].pos));
+		drawCommands[i] = IndirectRendering::DrawCommands(
+			static_cast<uint32_t>(_chunkMeshes[i].numVerticesIndices.second),	//Counts
+			1,																	// Instance count
+			firstIndexOffset,													// firstIndex (Index offset after the last chunk)
+			0,																	// Base vertex (Should be 0 because we are using 0 big VBO containing all vertices of the chunks)
+			0																	// Base instance (No instancing))
 		);
-		vetexOffset += numVertices;
 
+		firstIndexOffset += static_cast<uint32_t>(_chunkMeshes[i].numVerticesIndices.second);
+		vetexOffset += numVertices;
 	}
 
-	glGenBuffers(1, &_indirect.modelUniformBuffer);
-	glBindBuffer(GL_UNIFORM_BUFFER, _indirect.modelUniformBuffer);
-	glBufferData(GL_UNIFORM_BUFFER, _indirect.modelMatrices.size() * sizeof(glm::mat4), _indirect.modelMatrices.data(), GL_STATIC_DRAW);
+	_modelsUBO.generateBuffersPersistent(modelMatrices.size() * sizeof(glm::mat4), 0, modelMatrices.data());
+	_vpUBO.generateBuffersPersistent(2 * sizeof(glm::mat4), 1, nullptr);
 
-	_worldBuffers = DrawableBufferObjects(
-		renderedVertices,
-		Attributes_Details::voxelPackedAttributes,
-		renderedIndices
+	_world.generateBuffersI(
+		renderVertices.size() * sizeof(PackedVertex), renderVertices.data(), 
+		renderIndices.size() * sizeof(uint32_t), renderIndices.data(),
+		DRAWABLE_ATTRIBUTES::DRAWABLE_PACKED_ATTRIBUTES
 	);
 
-	uint32_t firstIndexOffset = 0;
-	for (const auto& chunkMesh : _chunkMeshes) {
-		_indirect.drawCommands.emplace_back(
-			static_cast<uint32_t>(chunkMesh.numVerticesIndices.second), //Counts
-			1,															// Instance count
-			firstIndexOffset,											// firstIndex (Index offset after the last chunk)
-			0,															// Base vertex (Should be 0 because we are using 0 big VBO containing all vertices of the chunks)
-			0															// Base instance (No instancing)
-		);
-		firstIndexOffset += static_cast<uint32_t>(chunkMesh.numVerticesIndices.second);
-	}
+	_skybox.generateBuffersF(
+		BASE_CUBE_VERTICES.size() * sizeof(FloatVertex), BASE_CUBE_VERTICES.data(),
+		BASE_CUBE_INDICES.size() * sizeof(uint32_t), BASE_CUBE_INDICES.data(),
+		DRAWABLE_ATTRIBUTES::DRAWABLE_FLOAT_ATTRIBUTES
+	);
 
-	glGenBuffers(1, &_indirect.indirectBuffer);
-	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, _indirect.indirectBuffer);
-
-	glBufferStorage(GL_DRAW_INDIRECT_BUFFER, _indirect.drawCommands.size() * sizeof(IndirectRendering::DrawCommands), _indirect.drawCommands.data(),
-		GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-
-	_indirect.indirectBufferPersistentPtr =
-		static_cast<IndirectRendering::DrawCommands*>(
-			glMapBufferRange(
-				GL_DRAW_INDIRECT_BUFFER,
-				0,
-				_indirect.drawCommands.size() * sizeof(IndirectRendering::DrawCommands),
-				GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT
-			)
-			);
-
-	if (!_indirect.indirectBufferPersistentPtr)
-		throw std::runtime_error("\nUnable to initialize indirectBufferPersistentPtr");
-
-	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
+	_indirect.generateBufferPersistent(drawCommands);
 }

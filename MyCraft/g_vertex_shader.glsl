@@ -14,6 +14,7 @@ layout(std140, binding = 1) uniform VPMatrices {
 out vec3 FragPos;
 out vec2 TexCoords;
 out vec3 Normal;
+out float LayerIndex;
 
 const vec3 normalsArr[6] = vec3[](
     vec3(-1.0, 0.0, 0.0),
@@ -24,8 +25,9 @@ const vec3 normalsArr[6] = vec3[](
     vec3(0.0, 0.0, 1.0)
 );
 
+
 void main() {
-    mat4 model = modelMatrices[gl_DrawID]; 
+    mat4 model = modelMatrices[gl_DrawID];
 
 	int coord_mask = 31; // Binary: 11111
     float x = float((aPacked >> 0) & coord_mask);
@@ -35,13 +37,17 @@ void main() {
 	vec4 worldPos = model * vec4(vec3(x, y, z), 1.0);
     FragPos = worldPos.xyz;
 
+    int normals_mask = 7; // Binary: 111
+    uint normals_index = uint((aPacked >> 15) & normals_mask);
+    Normal = normalsArr[normals_index];
+
     float v = float((aPacked >> 18) & 1); 
     float u = float((aPacked >> 19) & 1); 
     TexCoords = vec2(u, v);
-    
-    int normals_mask = 7; // Binary: 111
-    uint normals_index = uint((aPacked >> 15) & normals_mask);
-    Normal = mat3(transpose(inverse(model))) * normalsArr[normals_index];
+
+    int texture_mask = 15; // 1111
+    LayerIndex = float((aPacked >> 20) & texture_mask);
+   
 
     gl_Position = projectionMatrix * viewMatrix * worldPos;
 }

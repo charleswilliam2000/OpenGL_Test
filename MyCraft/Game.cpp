@@ -2,8 +2,8 @@
 
 void Game::processMouseMovement(double xInPos, double yInPos) {
     static bool firstMouse = true;
-    static float lastX = Constants::WINDOW_HEIGHT / 2;
-    static float lastY = Constants::WINDOW_WIDTH / 2;
+    static float lastX = CONSTANTS::WINDOW_HEIGHT / 2;
+    static float lastY = CONSTANTS::WINDOW_WIDTH / 2;
 
     float xpos = static_cast<float>(xInPos);
     float ypos = static_cast<float>(yInPos);

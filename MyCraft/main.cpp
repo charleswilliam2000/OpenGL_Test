@@ -10,7 +10,11 @@ int main() {
             throw std::runtime_error("Unable to initialize GLFW");
         }
 
-        Game game(Constants::WINDOW_HEIGHT, Constants::WINDOW_WIDTH, "OpenGL_window");
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 4);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+        Game game(CONSTANTS::WINDOW_WIDTH, CONSTANTS::WINDOW_HEIGHT, "OpenGL_window");
         glfwSwapInterval(1); // Enable vsync
 
         if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
@@ -22,9 +26,7 @@ int main() {
         glEnable(GL_CULL_FACE);
         glCullFace(GL_FRONT);
 
-        World world;
-        world.generateChunks(3, 3);
-                            //Pos                           //Front                     //Up
+        World world(7, 7);                            //Pos                           //Front                     //Up
         Camera camera({ glm::vec3(0.0f, 30.0f, 30.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f) });
         
         game.insertCamera(&camera);
