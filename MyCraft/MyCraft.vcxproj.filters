@@ -36,17 +36,17 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="deferred_vertex_shader.glsl">
+    <None Include="lighting_deferred_vertex.glsl">
       <Filter>Source Files\Shaders</Filter>
     </None>
-    <None Include="deferred_fragment_shader.glsl">
+    <None Include="lighting_deferred_fragment.glsl">
       <Filter>Source Files\Shaders</Filter>
     </None>
     <None Include="packages.config" />
-    <None Include="g_vertex_shader.glsl">
+    <None Include="geometry_vertex.glsl">
       <Filter>Source Files\Shaders</Filter>
     </None>
-    <None Include="g_fragment_shader.glsl">
+    <None Include="geometry_fragment.glsl">
       <Filter>Source Files\Shaders</Filter>
     </None>
     <None Include="wireframe_vertex_shader.glsl">
@@ -59,6 +59,12 @@
       <Filter>Source Files\Shaders</Filter>
     </None>
     <None Include="skybox_fragment_shader.glsl">
+      <Filter>Source Files\Shaders</Filter>
+    </None>
+    <None Include="composite_vertex.glsl">
+      <Filter>Source Files\Shaders</Filter>
+    </None>
+    <None Include="composite_fragment.glsl">
       <Filter>Source Files\Shaders</Filter>
     </None>
   </ItemGroup>

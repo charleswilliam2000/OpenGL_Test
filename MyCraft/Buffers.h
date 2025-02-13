@@ -6,6 +6,7 @@
 #include "Shape.h"
 
 #include <array>
+#include <vector>
 #include <iostream>
 
 struct DrawableIntAttributes {
@@ -91,26 +92,42 @@ public:
     }
 };
 
-struct DeferredBufferObjects {
+struct GeometryBufferObjects {
 public:
-    GLuint gBuffer = 0, rboDepth = 0;
-    GLuint gPosition = 0, gNormal = 0, gColorSpecular = 0;
+    GLuint gFBO = 0, gDepthText = 0, gTextArray = 0; // gBuffers
 
-    DeferredBufferObjects() {}
-    DeferredBufferObjects(int windowWidth, int windowHeight);
-
+    GeometryBufferObjects() {}
     void generateBuffers(int windowWidth, int windowHeight);
 
-    DeferredBufferObjects(const DeferredBufferObjects&) = delete;
-    DeferredBufferObjects& operator=(const DeferredBufferObjects&) = delete;
+    GeometryBufferObjects(const GeometryBufferObjects&) = delete;
+    GeometryBufferObjects& operator=(const GeometryBufferObjects&) = delete;
 
-    ~DeferredBufferObjects() {
-        glDeleteFramebuffers(1, &gBuffer);
-        glDeleteTextures(1, &gPosition);
-        glDeleteTextures(1, &gNormal);
-        glDeleteTextures(1, &gColorSpecular);
-        glDeleteRenderbuffers(1, &rboDepth);
+    ~GeometryBufferObjects() {
+        glDeleteFramebuffers(1, &gFBO);
+        glDeleteTextures(1, &gTextArray);
+        glDeleteTextures(1, &gDepthText);
     }
 };
+
+namespace PostProcessing {
+    struct SSAO {
+        GLuint ssaoFBO = 0, ssaoColorText = 0, ssaoBlurFBO = 0, ssaoBlurText = 0;
+        GLuint ssaoNoise = 0;
+
+        SSAO() {}
+        void generateSSAO(int windowWidth, int windowHeight, const void* noiseData);
+
+        SSAO(const SSAO&) = delete;
+        SSAO& operator=(const SSAO&) = delete;
+
+        ~SSAO() {
+            glDeleteFramebuffers(1, &ssaoFBO);
+            glDeleteFramebuffers(1, &ssaoBlurFBO);
+            glDeleteTextures(1, &ssaoColorText);
+            glDeleteTextures(1, &ssaoBlurText);
+            glDeleteTextures(1, &ssaoNoise);
+        }
+    };
+}
 
 #endif // BUFFERS_H

@@ -57,6 +57,8 @@ void Game::run() const {
         throw std::runtime_error("Camera not initialized!");
     
     Frustum cameraFrustum;
+    
+
     while (!glfwWindowShouldClose(_window)) {
         _camera->updateFrame();
         _camera->handleCameraMovement(_window);
@@ -66,7 +68,7 @@ void Game::run() const {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         _world->render(*_camera, cameraFrustum, wireframeMode);
-            
+
         glfwSwapBuffers(_window);
         glfwPollEvents();
     }
@@ -88,26 +90,22 @@ void Callbacks::mouse_callback(GLFWwindow* window, double xpos, double ypos) {
     windowInstance->processMouseMovement(xpos, ypos);
 }
 
-void Callbacks::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    Game* windowInstance = static_cast<Game*>(glfwGetWindowUserPointer(window));
-    if (!windowInstance) return;
-    
+void Callbacks::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {    
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
     }
 
-    static bool wireframeMode = false;
-
+    static bool VSYNC = true;
     if (key == GLFW_KEY_B && action == GLFW_PRESS) {
-        wireframeMode = !wireframeMode;
+        VSYNC = !VSYNC;
 
-        if (wireframeMode) {
-            windowInstance->wireframeMode = true;
-            std::cout << "Wireframe mode ON\n";
+        if (VSYNC) {
+            glfwSwapInterval(1);
+            std::cout << "\nVSYNC ON";
         }
         else {
-            windowInstance->wireframeMode = false;
-            std::cout << "Wireframe mode OFF\n";
+            glfwSwapInterval(0);
+            std::cout << "\nVSYNC OFF";
         }
     }
 }

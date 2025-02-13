@@ -7,6 +7,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <atomic>
+#include <random>
 
 #include "Chunk.h"
 #include "Indirect.h"
@@ -15,6 +16,11 @@
 
 using UniformsVEC3 = std::pair<const char*, glm::vec3>;
 using Uniforms1F = std::pair<const char*, float>;
+
+namespace WorldUtils {
+	void prepareSSAO(std::vector<float_VEC>& ssaoKernels, std::vector<float_VEC>& ssaoNoise);
+	std::array<uint8_t, CONSTANTS::Dimension_2DSize> sampleHeightmap(const siv::PerlinNoise& perlin, uint32_t baseTerrainElevation, const float_VEC& chunkOffset);
+}
 
 class World {
 	using WorldChunks = std::vector<WorldChunk>;
@@ -25,10 +31,7 @@ private:
 	void updateCameraChunkPos(const float_VEC& cameraPos);
 
 	void renderQuad() const;
-	void renderSkybox(const glm::mat4& view, const glm::mat4& projection) const;
 
-	std::array<uint8_t, CONSTANTS::Dimension_2DSize> sampleHeightmap(const siv::PerlinNoise& perlin, uint32_t baseTerrainElevation, const float_VEC& chunkOffset);
-	
 	IndirectRendering _indirect;
 
 	UniformBufferObjects _vpUBO;
@@ -38,8 +41,8 @@ private:
 	ChunkMeshes _chunkMeshes;
 
 	DrawableBufferObjects _world;
-	DrawableBufferObjects _skybox;
-	DeferredBufferObjects _deferred;
+
+	GeometryBufferObjects _deferred;
 
 	int32_VEC _cameraChunkPos;
 
@@ -48,7 +51,6 @@ private:
 
 	ShaderProgram _shaderGeometryPass;
 	ShaderProgram _shaderLightingPass;
-	ShaderProgram _skyboxShader;
 	ShaderProgram _wireframeShader;
 
 	Texture _textureAtlas{};

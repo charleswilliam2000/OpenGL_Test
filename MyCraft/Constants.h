@@ -2,8 +2,8 @@
 #define CONSTANTS_H
 
 namespace CONSTANTS {
-	constexpr int WINDOW_HEIGHT = 800;
-	constexpr int WINDOW_WIDTH = 1000;
+	constexpr int WINDOW_HEIGHT = 1060;
+	constexpr int WINDOW_WIDTH = 1920;
 
 	constexpr size_t Dimension_1DSize = 16;
 	constexpr size_t Dimension_2DSize = 256;

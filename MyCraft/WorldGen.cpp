@@ -1,21 +1,52 @@
 #include "World.h"
 
-std::array<uint8_t, CONSTANTS::Dimension_2DSize> World::sampleHeightmap(const siv::PerlinNoise& perlin, uint32_t baseTerrainElevation, const float_VEC& chunkOffset)
+void WorldUtils::prepareSSAO(std::vector<float_VEC>& ssaoKernels, std::vector<float_VEC>& ssaoNoise) {
+
+	if (ssaoKernels.empty() || ssaoNoise.empty())
+		throw std::runtime_error("\nVectors not initialized");
+
+	std::uniform_real_distribution<float> genRandomFloat(0.0f, 1.0f);
+	std::default_random_engine generator;
+
+	constexpr auto lerp = [&](float a, float b, float z) -> float {
+		return a + z * (b - a);
+		};
+
+	for (int i = 0; i < ssaoKernels.size(); i++) {
+		glm::vec3 sample(genRandomFloat(generator) * 2.0f - 1.0f, genRandomFloat(generator) * 2.0f - 1.0f, genRandomFloat(generator));
+		sample = glm::normalize(sample);
+		sample *= genRandomFloat(generator);
+
+		float scale = static_cast<float>(i) / 64.0f;
+		scale = lerp(0.1f, 1.0f, scale * scale);
+		sample *= scale;
+
+		ssaoKernels[i] = sample;
+	}
+
+	for (unsigned int i = 0; i < ssaoNoise.size(); i++)
+	{
+		glm::vec3 noise(genRandomFloat(generator) * 2.0 - 1.0, genRandomFloat(generator) * 2.0 - 1.0, 0.0f); 
+		ssaoNoise[i] = noise;
+	}
+}
+
+std::array<uint8_t, CONSTANTS::Dimension_2DSize> WorldUtils::sampleHeightmap(const siv::PerlinNoise& perlin, uint32_t baseTerrainElevation, const float_VEC& chunkOffset)
 {
 	std::array<uint8_t, CONSTANTS::Dimension_2DSize> heightmap{};
 
-	constexpr double scale = 40.0, persistence = 0.5, lacunuarity = 1.25;
-	constexpr double continentalnessOffset = 1.0, erosionOffset = 244.0, elevationOffset = -111.0;
+	constexpr double scale = 80.0, persistence = 0.5, lacunuarity = 1.5;
+	constexpr double continentalnessOffset = 881.0, erosionOffset = 244.0, elevationOffset = -111.0;
 
 	auto sampleHeightNoise = [&](double globalX, double globalZ) -> double {
-		double frequency = 1.0, amplitude = 1.5;
+		double frequency = 1.0, amplitude = 1.0;
 		double noiseHeight = 0.0;
 		
 		for (size_t octave = 0; octave < 4; octave++) {
 			double sampleX = (globalX / scale) * frequency;
 			double sampleZ = (globalZ / scale) * frequency;
 
-			noiseHeight += std::pow((1.0 - perlin.noise2D_01(sampleX, sampleZ)), 4) * amplitude;
+			noiseHeight += std::pow((1.0 - perlin.noise2D_01(sampleX, sampleZ)), 4.0) * amplitude;
 
 			amplitude *= persistence;
 			frequency *= lacunuarity;
@@ -25,9 +56,9 @@ std::array<uint8_t, CONSTANTS::Dimension_2DSize> World::sampleHeightmap(const si
 		};
 
 	auto getMaxHeight = [&](double continentalness, double elevation, double erosion, size_t maxHeight) -> double {
-		const auto normalizedContinentalness = 1.0 - std::tanh(continentalness);
-		const auto normalizedErosion = std::pow(1.0 - (std::tanh(1.25 * erosion) * std::tanh(1.25 * erosion)), 2.0);
-		const auto normalizedElevation = std::pow(1.0 - (std::tanh(1.5 * elevation) * std::tanh(1.5 * elevation)), 2.0);
+		const auto normalizedContinentalness = 1.0 - std::abs(std::tanh(continentalness));
+		const auto normalizedErosion = std::pow(1.0 - (std::tanh(erosion) * std::tanh(erosion)), 2.0);
+		const auto normalizedElevation = std::pow(1.0 - (std::tanh(elevation) * std::tanh(elevation)), 2.0);
 		
 		double clampedVal = std::min(std::max((normalizedContinentalness - 4.0 * normalizedErosion) / (-2.0 * normalizedElevation - 4.0 * normalizedErosion), 0.0), 1.0);
 		double smoothstepVal = 1.0 - (clampedVal * clampedVal * clampedVal * (clampedVal * (6.0 * clampedVal - 15.0) + 10.0));
@@ -43,7 +74,7 @@ std::array<uint8_t, CONSTANTS::Dimension_2DSize> World::sampleHeightmap(const si
 			const double globalZ = chunkOffset.z + static_cast<double>(z);
 			const double heightNoise = sampleHeightNoise(globalX, globalZ);
 
-			double frequency = 1.0, amplitude = 1.5, continentalness = 0.0, erosion = 0.0, elevation = 0.0;
+			double frequency = 1.0, amplitude = 2.0, continentalness = 0.0, erosion = 0.0, elevation = 0.0;
 			for (size_t octave = 0; octave < 4; octave++) {
 				const auto sampleContinentalnessX = ((globalX + continentalnessOffset) / scale) * frequency;
 				const auto sampleContinentalnessZ = ((globalZ + continentalnessOffset) / scale) * frequency;
@@ -74,6 +105,31 @@ std::array<uint8_t, CONSTANTS::Dimension_2DSize> World::sampleHeightmap(const si
 	return heightmap;
 }
 
+World::World(int gridSize, int verticalSize) :
+	_shaderGeometryPass("geometry_vertex.glsl", "geometry_fragment.glsl"),
+	_shaderLightingPass("lighting_deferred_vertex.glsl", "lighting_deferred_fragment.glsl"),
+	_wireframeShader("wireframe_vertex_shader.glsl", "wireframe_fragment_shader.glsl"),
+	_textureAtlas("TextureAtlas.jpg")
+{
+	_deferred.generateBuffers(CONSTANTS::WINDOW_WIDTH, CONSTANTS::WINDOW_HEIGHT); // Generate the pipeline buffers
+
+	// --- SAMPLE SSAO KERNELS ---
+	constexpr size_t numKernels = 64, numNoises = 16;
+	std::vector<float_VEC> ssaoKernels(numKernels);
+	std::vector<float_VEC> ssaoNoise(numNoises);
+	WorldUtils::prepareSSAO(ssaoKernels, ssaoNoise);
+
+	// --- CONFIGURE SHADERS  --- 
+	_shaderGeometryPass.setUniform1i("textureAtlas", _textureAtlas.textureID);
+
+	_shaderLightingPass.setUniform1i("gTexArray", _deferred.gTextArray);
+	_shaderLightingPass.setUniform1i("gDepth", _deferred.gDepthText);
+
+	// --- PREPARE MESH / DRAWABLE'S BUFFERS / INDIRECT MULTIDRAW COMMANDS --- 
+	generateChunks(gridSize, verticalSize);
+
+}
+
 void World::generateChunks(int gridSize, int verticalSize)
 {
 	static const siv::PerlinNoise::seed_type seed = 123456u;
@@ -85,7 +141,7 @@ void World::generateChunks(int gridSize, int verticalSize)
 
 	const int horizontalCenter = gridSize / 2; // 3 = 1; 5 = 2; 7 = 3;
 	const int verticalCenter = verticalSize / 2;
-	const uint32_t baseTerrainElevation = static_cast<uint32_t>(verticalCenter) * 16u;
+	const uint32_t baseTerrainElevation = static_cast<uint32_t>(verticalCenter) * 20u;
 
 	constexpr std::array<std::pair<FACES, int32_VEC>, 6> neighborOffsets = { {
 		{FACES::WEST,	{-1, 0, 0}},
@@ -115,7 +171,7 @@ void World::generateChunks(int gridSize, int verticalSize)
 					static_cast<float>((chunkZ - horizontalCenter) * static_cast<int>(CONSTANTS::Dimension_1DSize))
 				};
 
-				auto heightmap = sampleHeightmap(perlin, baseTerrainElevation, chunk2DOffset);
+				auto heightmap = WorldUtils::sampleHeightmap(perlin, baseTerrainElevation, chunk2DOffset);
 
 				for (int chunkY = 0; chunkY < verticalSize; chunkY++) {
 
@@ -224,11 +280,6 @@ void World::generateChunks(int gridSize, int verticalSize)
 		DRAWABLE_ATTRIBUTES::DRAWABLE_PACKED_ATTRIBUTES
 	);
 
-	_skybox.generateBuffersF(
-		BASE_CUBE_VERTICES.size() * sizeof(FloatVertex), BASE_CUBE_VERTICES.data(),
-		BASE_CUBE_INDICES.size() * sizeof(uint32_t), BASE_CUBE_INDICES.data(),
-		DRAWABLE_ATTRIBUTES::DRAWABLE_FLOAT_ATTRIBUTES
-	);
-
 	_indirect.generateBufferPersistent(drawCommands);
 }
+

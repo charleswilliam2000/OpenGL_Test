@@ -11,7 +11,6 @@ layout(std140, binding = 1) uniform VPMatrices {
 	mat4 viewMatrix;
 };
 
-out vec3 FragPos;
 out vec2 TexCoords;
 out vec3 Normal;
 out float LayerIndex;
@@ -35,7 +34,6 @@ void main() {
     float z = float((aPacked >> 10) & coord_mask);
 
 	vec4 worldPos = model * vec4(vec3(x, y, z), 1.0);
-    FragPos = worldPos.xyz;
 
     int normals_mask = 7; // Binary: 111
     uint normals_index = uint((aPacked >> 15) & normals_mask);
@@ -47,7 +45,6 @@ void main() {
 
     int texture_mask = 15; // 1111
     LayerIndex = float((aPacked >> 20) & texture_mask);
-   
 
     gl_Position = projectionMatrix * viewMatrix * worldPos;
 }

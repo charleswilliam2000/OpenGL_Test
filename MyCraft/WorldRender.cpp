@@ -63,37 +63,10 @@ void World::renderQuad() const {
 	glBindVertexArray(0);
 }
 
-void World::renderSkybox(const glm::mat4& view, const glm::mat4& projection) const {
-	glBindVertexArray(_skybox.vaoHandle);
-	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-	glBindVertexArray(0);
-}
-
-World::World(int gridSize, int verticalSize) :
-	_shaderGeometryPass("g_vertex_shader.glsl", "g_fragment_shader.glsl"),
-	_shaderLightingPass("deferred_vertex_shader.glsl", "deferred_fragment_shader.glsl"), 
-	_skyboxShader("skybox_vertex_shader.glsl", "skybox_fragment_shader.glsl"),
-	_wireframeShader("wireframe_vertex_shader.glsl", "wireframe_fragment_shader.glsl"),
-	_textureAtlas("TextureAtlas.jpg")
-{
-	_deferred.generateBuffers(CONSTANTS::WINDOW_WIDTH, CONSTANTS::WINDOW_HEIGHT);
-
-	_shaderGeometryPass.useShaderProgram();
-	_shaderGeometryPass.setUniform1i("textureAtlas", _textureAtlas.textureID);
-
-	_shaderLightingPass.useShaderProgram();
-	_shaderLightingPass.setUniform1i("gPosition", 0);
-	_shaderLightingPass.setUniform1i("gNormal", 1);
-	_shaderLightingPass.setUniform1i("gColorSpecular", 2);
-
-	// --- Prepare Mesh / Buffers / Indirect Rendering --- 
-	generateChunks(gridSize, verticalSize);
-
-}
-
 void World::render(const Camera& camera, const Frustum& cameraFrustum, bool wireframeMode) {
-	//---GEOMETRY PASS---
-	glBindFramebuffer(GL_FRAMEBUFFER, _deferred.gBuffer);
+	
+	// ---GEOMETRY PASS---
+	glBindFramebuffer(GL_FRAMEBUFFER, _deferred.gFBO);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		_shaderGeometryPass.useShaderProgram();
 
@@ -108,48 +81,41 @@ void World::render(const Camera& camera, const Frustum& cameraFrustum, bool wire
 		// ---FRUSTUM CULLING---
 		updateCameraChunkPos(camera.getVector(CameraVectors::POS));
 		for (size_t i = 0; i < _chunkMeshes.size(); i++) {
-			bool outsideFrustum = (_chunkMeshes[i].pos.z < _cameraChunkPos.z) ? true : _chunkMeshes[i].getBoundingBox().isOutsideFrustum(cameraFrustum);
+			bool outsideFrustum = (_chunkMeshes[i].pos.z <= _cameraChunkPos.z) ? true : _chunkMeshes[i].getBoundingBox().isOutsideFrustum(cameraFrustum);
 			_indirect.drawCommands[i].instanceCount = (outsideFrustum) ? 0 : 1;
 		}
 
 		// ---DRAW CHUNKS MULTI-INDIRECT---
+		glEnable(GL_DEPTH_TEST);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D_ARRAY, _textureAtlas.textureID);
 
 		glBindVertexArray(_world.vaoHandle);
 		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, _indirect.indirectBuffer);
 		glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, _chunkMeshes.size(), 0);
-
+		
+		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
 		glBindVertexArray(0);
+		glDisable(GL_DEPTH_TEST); // Disable DEPTH TESTING for lighting pass as we directly sample the depth buffer
 
 	// ---LIGHTING PASS---
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glBindFramebuffer(GL_FRAMEBUFFER,0);
 		_shaderLightingPass.useShaderProgram();
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, _deferred.gPosition);
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, _deferred.gNormal);
-			glActiveTexture(GL_TEXTURE2);
-			glBindTexture(GL_TEXTURE_2D, _deferred.gColorSpecular);
-			setDirectionalLightUniform();
-			_shaderLightingPass.setUniformVec3("cameraPos", camera.getVector(CameraVectors::POS));
-		renderQuad();
+		
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, _deferred.gTextArray);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, _deferred.gDepthText);
+		
+		setDirectionalLightUniform();
+		_shaderLightingPass.setUniformMat4("invViewProj", glm::inverse(projection * view));
+		_shaderLightingPass.setUniformVec3("cameraPos", camera.getVector(CameraVectors::POS));
+		renderQuad();  
 
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, _deferred.gBuffer);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-	glBlitFramebuffer(0, 0, CONSTANTS::WINDOW_WIDTH, CONSTANTS::WINDOW_HEIGHT, 0, 0, CONSTANTS::WINDOW_WIDTH, CONSTANTS::WINDOW_HEIGHT, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-
-	// --- Render skybox --- 
-	_skyboxShader.useShaderProgram();
-	_skyboxShader.setUniformMat4("projection", projection);
-	_skyboxShader.setUniformMat4("view", glm::mat4(glm::mat3(view)));
-	glDepthFunc(GL_LEQUAL);
-	renderSkybox(view, projection);
-	glDepthFunc(GL_LESS);
-
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, 0);
 }
