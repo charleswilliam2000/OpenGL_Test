@@ -1,7 +1,16 @@
 #ifndef CAMERA_H 
 #define CAMERA_H
 
-#include "stdafx.h"
+#include <glad/glad.h>
+#include <glfw/glfw3.h>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+#include <iostream>
+#include "Constants.h"
+#include "Vectors.h"
 
 namespace Default_Camera_Values {
 	constexpr float SPEED = 4.5f;

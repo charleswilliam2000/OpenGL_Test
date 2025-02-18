@@ -93,11 +93,27 @@ void DrawableBufferObjects::generateBuffersI(size_t vboSize, const void* vboData
     glBindVertexArray(0);
 }
 
-UniformBufferObjects::UniformBufferObjects(size_t size, GLuint bindingPoint, const void* data) 
-    : bindingPoint(bindingPoint), bufferSize(static_cast<GLuint>(size)) {
-        glGenBuffers(1, &handle);
-        glBindBuffer(GL_UNIFORM_BUFFER, handle);
-        glBindBufferBase(GL_UNIFORM_BUFFER, bindingPoint, handle);
+void UniformBufferObjects::generateBuffers(STORAGE_TYPE type, size_t size, GLuint bindingPoint, const void* data) {
+    this->bindingPoint = bindingPoint;
+    this->bufferSize = static_cast<GLuint>(size);
+
+    glGenBuffers(1, &handle);
+    glBindBuffer(GL_UNIFORM_BUFFER, handle);
+    glBindBufferBase(GL_UNIFORM_BUFFER, bindingPoint, handle);
+
+    switch (type) {
+
+    case STORAGE_TYPE::GL_BUFFER_DATA_STATIC_DRAW:
+
+        glBufferData(GL_UNIFORM_BUFFER, bufferSize, data, GL_STATIC_DRAW);
+        break;
+
+    case STORAGE_TYPE::GL_BUFFER_DATA_DYNAMIC_DRAW:
+
+        glBufferData(GL_UNIFORM_BUFFER, bufferSize, data, GL_DYNAMIC_DRAW);
+        break;
+
+    case STORAGE_TYPE::GL_BUFFER_STORAGE_COHERENT:
 
         glBufferStorage(GL_UNIFORM_BUFFER, bufferSize, data, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
         persistentPtr = glMapBufferRange(GL_UNIFORM_BUFFER, 0, bufferSize, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
@@ -105,28 +121,26 @@ UniformBufferObjects::UniformBufferObjects(size_t size, GLuint bindingPoint, con
         if (!persistentPtr) {
             throw std::runtime_error("\nUnable to initialize persistent ptr");
         }
+        else break;
 
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
-}
-void UniformBufferObjects::generateBuffersPersistent(size_t size, GLuint bindingPoint, const void* data) {
-    this->bindingPoint = bindingPoint;
-    this->bufferSize = size;
+    case STORAGE_TYPE::GL_BUFFER_STORAGE_INCOHERENT:
 
-    glGenBuffers(1, &handle);
-    glBindBuffer(GL_UNIFORM_BUFFER, handle);
-    glBindBufferBase(GL_UNIFORM_BUFFER, bindingPoint, handle);
+        glBufferStorage(GL_UNIFORM_BUFFER, bufferSize, data, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
+        persistentPtr = glMapBufferRange(GL_UNIFORM_BUFFER, 0, bufferSize, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
 
-    glBufferStorage(GL_UNIFORM_BUFFER, bufferSize, data, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-    persistentPtr = glMapBufferRange(GL_UNIFORM_BUFFER, 0, bufferSize, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+        if (!persistentPtr) {
+            throw std::runtime_error("\nUnable to initialize persistent ptr");
+        }
 
-    if (!persistentPtr) {
-        throw std::runtime_error("\nUnable to initialize persistent ptr");
+        break;
+    default:
+        throw std::runtime_error("\nUnable to determine storage type");
     }
-
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 void GeometryBufferObjects::generateBuffers(int windowWidth, int windowHeight) {
+
     glGenFramebuffers(1, &gFBO);
     glBindFramebuffer(GL_FRAMEBUFFER, gFBO);
 
@@ -149,10 +163,17 @@ void GeometryBufferObjects::generateBuffers(int windowWidth, int windowHeight) {
     //Attach depth buffer 
     glGenTextures(1, &gDepthText);  
     glBindTexture(GL_TEXTURE_2D, gDepthText);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, windowWidth, windowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, windowWidth, windowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, gDepthText, 0);
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -161,7 +182,7 @@ void GeometryBufferObjects::generateBuffers(int windowWidth, int windowHeight) {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void PostProcessing::SSAO::generateSSAO(int windowWidth, int windowHeight, const void* noiseData) {
+void PostProcessing::SSAO::generateSSAO(int windowWidth, int windowHeight) {
     glGenFramebuffers(1, &ssaoFBO);
     glBindFramebuffer(GL_FRAMEBUFFER, ssaoFBO);
 
@@ -171,7 +192,6 @@ void PostProcessing::SSAO::generateSSAO(int windowWidth, int windowHeight, const
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, windowWidth, windowHeight, 0, GL_RED, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssaoColorText, 0);
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -189,7 +209,6 @@ void PostProcessing::SSAO::generateSSAO(int windowWidth, int windowHeight, const
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, windowWidth, windowHeight, 0, GL_RED, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssaoBlurText, 0);
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -198,9 +217,43 @@ void PostProcessing::SSAO::generateSSAO(int windowWidth, int windowHeight, const
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+    std::uniform_real_distribution<float> genRandomFloat(0.0f, 1.0f);
+    std::default_random_engine generator;
+
+    constexpr auto lerp = [&](float a, float b, float z) -> float {
+        return a + z * (b - a);
+        };
+
+    std::array<float_VEC, 64> ssaoKernels{}; // SAMPLING 64 KERNELS
+    for (int i = 0; i < ssaoKernels.size(); i++) {
+        glm::vec3 sample(genRandomFloat(generator) * 2.0f - 1.0f, genRandomFloat(generator) * 2.0f - 1.0f, genRandomFloat(generator));
+        sample = glm::normalize(sample);
+        sample *= genRandomFloat(generator);
+
+        float scale = static_cast<float>(i) / 64.0f;
+        scale = lerp(0.1f, 1.0f, scale * scale);
+        sample *= scale;
+
+        ssaoKernels[i] = sample;
+    }
+
+    constexpr size_t ssaoKernelsUBObindingPoint = 2;
+
+    ssaoKernelsUBO.generateBuffers(
+        STORAGE_TYPE::GL_BUFFER_DATA_STATIC_DRAW, 
+        ssaoKernels.size() * sizeof(float_VEC), ssaoKernelsUBObindingPoint, ssaoKernels.data()
+    );
+
+    std::array<float_VEC, 16> ssaoNoises{};
+    for (int i = 0; i < 16; i++)
+    {
+        glm::vec3 noise(genRandomFloat(generator) * 2.0 - 1.0, genRandomFloat(generator) * 2.0 - 1.0, 0.0f);
+        ssaoNoises[i] = noise;
+    }
+
     glGenTextures(1, &ssaoNoise);
     glBindTexture(GL_TEXTURE_2D, ssaoNoise);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, 4, 4, 0, GL_RGB, GL_FLOAT, noiseData);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, 4, 4, 0, GL_RGB, GL_FLOAT, ssaoNoises.data());
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);

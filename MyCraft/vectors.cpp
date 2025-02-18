@@ -1,4 +1,4 @@
-#include "vectors.h"
+#include "Vectors.h"
 
 uint32_VEC uint32_VEC::getAdjacentCoordinate(const FACES& face) const
 {

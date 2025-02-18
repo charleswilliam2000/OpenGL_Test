@@ -1,10 +1,18 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
-#include "stdafx.h"
-#include "stb_image.h"
+#include <glad/glad.h>
+#include <glfw/glfw3.h>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+#include <iostream>
 #include <algorithm>
+#include <vector>
+
+#include "stb_image.h"
 
 struct Img_Configs {
 	unsigned char* _data{};

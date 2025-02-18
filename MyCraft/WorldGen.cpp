@@ -1,36 +1,5 @@
 #include "World.h"
 
-void WorldUtils::prepareSSAO(std::vector<float_VEC>& ssaoKernels, std::vector<float_VEC>& ssaoNoise) {
-
-	if (ssaoKernels.empty() || ssaoNoise.empty())
-		throw std::runtime_error("\nVectors not initialized");
-
-	std::uniform_real_distribution<float> genRandomFloat(0.0f, 1.0f);
-	std::default_random_engine generator;
-
-	constexpr auto lerp = [&](float a, float b, float z) -> float {
-		return a + z * (b - a);
-		};
-
-	for (int i = 0; i < ssaoKernels.size(); i++) {
-		glm::vec3 sample(genRandomFloat(generator) * 2.0f - 1.0f, genRandomFloat(generator) * 2.0f - 1.0f, genRandomFloat(generator));
-		sample = glm::normalize(sample);
-		sample *= genRandomFloat(generator);
-
-		float scale = static_cast<float>(i) / 64.0f;
-		scale = lerp(0.1f, 1.0f, scale * scale);
-		sample *= scale;
-
-		ssaoKernels[i] = sample;
-	}
-
-	for (unsigned int i = 0; i < ssaoNoise.size(); i++)
-	{
-		glm::vec3 noise(genRandomFloat(generator) * 2.0 - 1.0, genRandomFloat(generator) * 2.0 - 1.0, 0.0f); 
-		ssaoNoise[i] = noise;
-	}
-}
-
 std::array<uint8_t, CONSTANTS::Dimension_2DSize> WorldUtils::sampleHeightmap(const siv::PerlinNoise& perlin, uint32_t baseTerrainElevation, const float_VEC& chunkOffset)
 {
 	std::array<uint8_t, CONSTANTS::Dimension_2DSize> heightmap{};
@@ -57,10 +26,10 @@ std::array<uint8_t, CONSTANTS::Dimension_2DSize> WorldUtils::sampleHeightmap(con
 
 	auto getMaxHeight = [&](double continentalness, double elevation, double erosion, size_t maxHeight) -> double {
 		const auto normalizedContinentalness = 1.0 - std::abs(std::tanh(continentalness));
-		const auto normalizedErosion = std::pow(1.0 - (std::tanh(erosion) * std::tanh(erosion)), 2.0);
-		const auto normalizedElevation = std::pow(1.0 - (std::tanh(elevation) * std::tanh(elevation)), 2.0);
+		const auto normalizedErosion = 2.0 * std::pow(std::exp(std::pow(-1.0 * erosion, 2.0)), 2.0);
+		const auto normalizedElevation = -2.0 * std::pow(std::exp(std::pow(-1.0 * elevation, 2.0)), 2.0);
 		
-		double clampedVal = std::min(std::max((normalizedContinentalness - 4.0 * normalizedErosion) / (-2.0 * normalizedElevation - 4.0 * normalizedErosion), 0.0), 1.0);
+		double clampedVal = std::min(std::max((normalizedContinentalness - normalizedErosion) / (normalizedElevation - normalizedErosion), 0.0), 1.0);
 		double smoothstepVal = 1.0 - (clampedVal * clampedVal * clampedVal * (clampedVal * (6.0 * clampedVal - 15.0) + 10.0));
 		return maxHeight * smoothstepVal;
 		};
@@ -107,24 +76,26 @@ std::array<uint8_t, CONSTANTS::Dimension_2DSize> WorldUtils::sampleHeightmap(con
 
 World::World(int gridSize, int verticalSize) :
 	_shaderGeometryPass("geometry_vertex.glsl", "geometry_fragment.glsl"),
+	_shaderSSAOPass("ssao_vertex.glsl", "ssao_fragment.glsl"),
 	_shaderLightingPass("lighting_deferred_vertex.glsl", "lighting_deferred_fragment.glsl"),
 	_wireframeShader("wireframe_vertex_shader.glsl", "wireframe_fragment_shader.glsl"),
 	_textureAtlas("TextureAtlas.jpg")
 {
 	_deferred.generateBuffers(CONSTANTS::WINDOW_WIDTH, CONSTANTS::WINDOW_HEIGHT); // Generate the pipeline buffers
-
-	// --- SAMPLE SSAO KERNELS ---
-	constexpr size_t numKernels = 64, numNoises = 16;
-	std::vector<float_VEC> ssaoKernels(numKernels);
-	std::vector<float_VEC> ssaoNoise(numNoises);
-	WorldUtils::prepareSSAO(ssaoKernels, ssaoNoise);
+	_ssao.generateSSAO(CONSTANTS::WINDOW_WIDTH, CONSTANTS::WINDOW_HEIGHT);
 
 	// --- CONFIGURE SHADERS  --- 
-	_shaderGeometryPass.setUniform1i("textureAtlas", _textureAtlas.textureID);
+	_shaderGeometryPass.use();
+	_shaderGeometryPass.setInt("textureAtlas", 1);
 
-	_shaderLightingPass.setUniform1i("gTexArray", _deferred.gTextArray);
-	_shaderLightingPass.setUniform1i("gDepth", _deferred.gDepthText);
+	_shaderLightingPass.use();
+	_shaderLightingPass.setInt("gTexArray", 2);
+	_shaderLightingPass.setInt("gDepth", 3);
+	_shaderLightingPass.setInt("ssao", 4);
 
+	_shaderSSAOPass.use();
+	_shaderSSAOPass.setInt("ssaoNoise", 6);
+	
 	// --- PREPARE MESH / DRAWABLE'S BUFFERS / INDIRECT MULTIDRAW COMMANDS --- 
 	generateChunks(gridSize, verticalSize);
 
@@ -250,9 +221,7 @@ void World::generateChunks(int gridSize, int verticalSize)
 	for (size_t i = 0; i < numChunks; i++) {
 		const auto& [chunkVertices, chunkIndices] = _chunkMeshes[i].chunkData;
 		auto numVertices = static_cast<uint32_t>(chunkVertices.size());
-		auto numIndices = static_cast<uint32_t>(chunkIndices.size());
 
-		_numVertices += numVertices; _numIndices += numIndices;
 		renderVertices.insert(renderVertices.end(), chunkVertices.begin(), chunkVertices.end());
 		std::transform(chunkIndices.begin(), chunkIndices.end(), std::back_inserter(renderIndices), [&](uint32_t index) {
 			return index + vetexOffset;
@@ -271,8 +240,15 @@ void World::generateChunks(int gridSize, int verticalSize)
 		vetexOffset += numVertices;
 	}
 
-	_modelsUBO.generateBuffersPersistent(modelMatrices.size() * sizeof(glm::mat4), 0, modelMatrices.data());
-	_vpUBO.generateBuffersPersistent(2 * sizeof(glm::mat4), 1, nullptr);
+	_modelsUBO.generateBuffers(
+		STORAGE_TYPE::GL_BUFFER_DATA_STATIC_DRAW,
+		modelMatrices.size() * sizeof(glm::mat4), 0, modelMatrices.data()
+	);
+
+	_vpUBO.generateBuffers(
+		STORAGE_TYPE::GL_BUFFER_STORAGE_INCOHERENT,
+		2 * sizeof(glm::mat4), 1, nullptr
+	);
 
 	_world.generateBuffersI(
 		renderVertices.size() * sizeof(PackedVertex), renderVertices.data(), 

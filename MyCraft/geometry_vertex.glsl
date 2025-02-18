@@ -24,6 +24,7 @@ const vec3 normalsArr[6] = vec3[](
     vec3(0.0, 0.0, 1.0)
 );
 
+uniform mat3 u_NormalMat;
 
 void main() {
     mat4 model = modelMatrices[gl_DrawID];
@@ -37,7 +38,7 @@ void main() {
 
     int normals_mask = 7; // Binary: 111
     uint normals_index = uint((aPacked >> 15) & normals_mask);
-    Normal = normalsArr[normals_index];
+    Normal = u_NormalMat * normalsArr[normals_index];
 
     float v = float((aPacked >> 18) & 1); 
     float u = float((aPacked >> 19) & 1); 

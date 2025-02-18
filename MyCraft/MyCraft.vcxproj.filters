@@ -25,14 +25,14 @@
     <Filter Include="Header Files\Miscs">
       <UniqueIdentifier>{2a6c304a-63bf-4575-a74e-e48324258c1b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\WorldGen">
-      <UniqueIdentifier>{35908eeb-c08f-47f4-81e5-32b502a16955}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\WorldGen">
-      <UniqueIdentifier>{b7bc2a48-d6f3-45a7-8adf-cf4d6e2990e5}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\Miscs">
       <UniqueIdentifier>{75f82654-a480-4135-93ec-16a8e0e48289}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\World">
+      <UniqueIdentifier>{b7bc2a48-d6f3-45a7-8adf-cf4d6e2990e5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\World">
+      <UniqueIdentifier>{35908eeb-c08f-47f4-81e5-32b502a16955}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -61,10 +61,10 @@
     <None Include="skybox_fragment_shader.glsl">
       <Filter>Source Files\Shaders</Filter>
     </None>
-    <None Include="composite_vertex.glsl">
+    <None Include="ssao_vertex.glsl">
       <Filter>Source Files\Shaders</Filter>
     </None>
-    <None Include="composite_fragment.glsl">
+    <None Include="ssao_fragment.glsl">
       <Filter>Source Files\Shaders</Filter>
     </None>
   </ItemGroup>
@@ -78,20 +78,14 @@
     <ClCompile Include="Game.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Shader.cpp">
-      <Filter>Source Files\Rendering</Filter>
-    </ClCompile>
     <ClCompile Include="Texture.cpp">
       <Filter>Source Files\Rendering</Filter>
     </ClCompile>
-    <ClCompile Include="FileUtils.h">
-      <Filter>Header Files\Miscs</Filter>
-    </ClCompile>
     <ClCompile Include="Chunk.cpp">
-      <Filter>Source Files\WorldGen</Filter>
+      <Filter>Source Files\World</Filter>
     </ClCompile>
     <ClCompile Include="WorldRender.cpp">
-      <Filter>Source Files\WorldGen</Filter>
+      <Filter>Source Files\World</Filter>
     </ClCompile>
     <ClCompile Include="Camera.cpp">
       <Filter>Source Files\Rendering</Filter>
@@ -99,26 +93,23 @@
     <ClCompile Include="Buffers.cpp">
       <Filter>Source Files\Rendering</Filter>
     </ClCompile>
-    <ClCompile Include="vectors.cpp">
-      <Filter>Source Files\Miscs</Filter>
-    </ClCompile>
-    <ClCompile Include="stdafxh.cpp">
-      <Filter>Source Files\Miscs</Filter>
-    </ClCompile>
-    <ClCompile Include="FileUtils.cpp">
+    <ClCompile Include="Vectors.cpp">
       <Filter>Source Files\Miscs</Filter>
     </ClCompile>
     <ClCompile Include="Frustum.cpp">
       <Filter>Source Files\Rendering</Filter>
     </ClCompile>
     <ClCompile Include="WorldGen.cpp">
-      <Filter>Source Files\WorldGen</Filter>
+      <Filter>Source Files\World</Filter>
     </ClCompile>
     <ClCompile Include="WorldMultiThread.cpp">
-      <Filter>Source Files\WorldGen</Filter>
+      <Filter>Source Files\World</Filter>
     </ClCompile>
     <ClCompile Include="Indirect.cpp">
       <Filter>Source Files\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderStructures.cpp">
+      <Filter>Header Files\Miscs</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -135,19 +126,16 @@
       <Filter>Header Files\Miscs</Filter>
     </ClInclude>
     <ClInclude Include="Chunk.h">
-      <Filter>Header Files\WorldGen</Filter>
+      <Filter>Header Files\World</Filter>
     </ClInclude>
-    <ClInclude Include="stdafx.h">
-      <Filter>Header Files\Miscs</Filter>
-    </ClInclude>
-    <ClInclude Include="vectors.h">
+    <ClInclude Include="Vectors.h">
       <Filter>Header Files\Miscs</Filter>
     </ClInclude>
     <ClInclude Include="Shape.h">
       <Filter>Header Files\Miscs</Filter>
     </ClInclude>
     <ClInclude Include="World.h">
-      <Filter>Header Files\WorldGen</Filter>
+      <Filter>Header Files\World</Filter>
     </ClInclude>
     <ClInclude Include="PerlinNoise.hpp">
       <Filter>Header Files</Filter>

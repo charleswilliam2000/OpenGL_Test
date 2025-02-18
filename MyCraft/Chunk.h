@@ -8,7 +8,6 @@
 
 #include "PerlinNoise.hpp"
 
-
 struct ChunkData {
 	using Vertices = std::vector<PackedVertex>;
 	Vertices chunk_vertices;

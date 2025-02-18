@@ -5,9 +5,10 @@
 
 #include "Shape.h"
 
+#include <iostream>
 #include <array>
 #include <vector>
-#include <iostream>
+#include <random>
 
 struct DrawableIntAttributes {
     GLuint index;
@@ -67,27 +68,33 @@ public:
 
 };
 
+enum class STORAGE_TYPE : uint32_t {
+    GL_BUFFER_DATA_STATIC_DRAW = 0,
+    GL_BUFFER_DATA_DYNAMIC_DRAW = 1,
+    GL_BUFFER_STORAGE_COHERENT = 2,
+    GL_BUFFER_STORAGE_INCOHERENT = 3
+};
+
 struct UniformBufferObjects {
 public:
-    void* persistentPtr = nullptr;
     GLuint handle = 0, bindingPoint = 0, bufferSize = 0;
+    void* persistentPtr = nullptr;
 
     UniformBufferObjects() {}
-    UniformBufferObjects(size_t size, GLuint bindingPoint, const void* data = nullptr);
-
-    void generateBuffersPersistent(size_t size, GLuint bindingPoint, const void* data = nullptr);
 
     UniformBufferObjects(const UniformBufferObjects&) = delete;
     UniformBufferObjects& operator=(const UniformBufferObjects&) = delete;
 
-    void bindToShader(GLuint shaderProgram, const char* blockName) {
+    void generateBuffers(STORAGE_TYPE type, size_t size, GLuint bindingPoint, const void* data = nullptr);
+    void bindToShader(GLuint shaderProgram, const char* blockName) const {
         GLuint blockIndex = glGetUniformBlockIndex(shaderProgram, blockName);
         if (blockIndex != GL_INVALID_INDEX) {
             glUniformBlockBinding(shaderProgram, blockIndex, bindingPoint);
         }
     }
 
-    ~UniformBufferObjects() {
+    ~UniformBufferObjects() noexcept {
+        glUnmapBuffer(handle);
         glDeleteBuffers(1, &handle);
     }
 };
@@ -111,11 +118,14 @@ public:
 
 namespace PostProcessing {
     struct SSAO {
-        GLuint ssaoFBO = 0, ssaoColorText = 0, ssaoBlurFBO = 0, ssaoBlurText = 0;
+        UniformBufferObjects ssaoKernelsUBO;
+
+        GLuint ssaoFBO = 0, ssaoColorText = 0;
+        GLuint ssaoBlurFBO = 0, ssaoBlurText = 0;
         GLuint ssaoNoise = 0;
 
         SSAO() {}
-        void generateSSAO(int windowWidth, int windowHeight, const void* noiseData);
+        void generateSSAO(int windowWidth, int windowHeight);
 
         SSAO(const SSAO&) = delete;
         SSAO& operator=(const SSAO&) = delete;

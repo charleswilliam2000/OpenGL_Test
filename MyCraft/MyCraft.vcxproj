@@ -147,8 +147,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="composite_fragment.glsl" />
-    <None Include="composite_vertex.glsl" />
+    <None Include="ssao_fragment.glsl" />
+    <None Include="ssao_vertex.glsl" />
     <None Include="lighting_deferred_fragment.glsl" />
     <None Include="geometry_fragment.glsl" />
     <None Include="geometry_vertex.glsl" />
@@ -164,17 +164,14 @@
     <ClCompile Include="Buffers.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Chunk.cpp" />
-    <ClCompile Include="FileUtils.cpp" />
-    <ClCompile Include="FileUtils.h" />
     <ClCompile Include="Frustum.cpp" />
     <ClCompile Include="Indirect.cpp" />
-    <ClCompile Include="Shader.cpp" />
     <ClCompile Include="main.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="stdafxh.cpp" />
+    <ClCompile Include="RenderStructures.cpp" />
     <ClCompile Include="Texture.cpp" />
-    <ClCompile Include="vectors.cpp" />
+    <ClCompile Include="Vectors.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="WorldMultiThread.cpp" />
     <ClCompile Include="WorldRender.cpp" />
@@ -191,9 +188,8 @@
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Shape.h" />
     <ClInclude Include="stb_image.h" />
-    <ClInclude Include="stdafx.h" />
     <ClInclude Include="Texture.h" />
-    <ClInclude Include="vectors.h" />
+    <ClInclude Include="Vectors.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="World.h" />
   </ItemGroup>

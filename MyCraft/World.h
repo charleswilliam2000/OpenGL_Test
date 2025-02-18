@@ -1,6 +1,13 @@
 #ifndef WORLD_H
 #define WORLD_H
 
+#include <glad/glad.h>
+#include <glfw/glfw3.h>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include <future>
 #include <queue>
 #include <thread>
@@ -9,16 +16,17 @@
 #include <atomic>
 #include <random>
 
-#include "Chunk.h"
+#include "Constants.h"
+#include "vectors.h"
 #include "Indirect.h"
 #include "Shader.h"
 #include "Texture.h"
+#include "Chunk.h"
 
 using UniformsVEC3 = std::pair<const char*, glm::vec3>;
 using Uniforms1F = std::pair<const char*, float>;
 
 namespace WorldUtils {
-	void prepareSSAO(std::vector<float_VEC>& ssaoKernels, std::vector<float_VEC>& ssaoNoise);
 	std::array<uint8_t, CONSTANTS::Dimension_2DSize> sampleHeightmap(const siv::PerlinNoise& perlin, uint32_t baseTerrainElevation, const float_VEC& chunkOffset);
 }
 
@@ -26,12 +34,15 @@ class World {
 	using WorldChunks = std::vector<WorldChunk>;
 	using ChunkMeshes = std::vector<ChunkMesh>;
 	using PointLightPositions = std::vector<glm::vec3>;
+
 private:
 	void setDirectionalLightUniform() const;
 	void updateCameraChunkPos(const float_VEC& cameraPos);
 
 	void renderQuad() const;
+	void generateChunks(int gridSize, int verticalSize);
 
+	PostProcessing::SSAO _ssao;
 	IndirectRendering _indirect;
 
 	UniformBufferObjects _vpUBO;
@@ -41,22 +52,18 @@ private:
 	ChunkMeshes _chunkMeshes;
 
 	DrawableBufferObjects _world;
-
 	GeometryBufferObjects _deferred;
 
 	int32_VEC _cameraChunkPos;
 
-	uint32_t _numVertices = 0;
-	uint32_t _numIndices = 0;
-
-	ShaderProgram _shaderGeometryPass;
-	ShaderProgram _shaderLightingPass;
-	ShaderProgram _wireframeShader;
+	Shader _shaderGeometryPass;
+	Shader _shaderSSAOPass;
+	Shader _shaderLightingPass;
+	Shader _wireframeShader;
 
 	Texture _textureAtlas{};
 public:
 	World(int gridSize, int verticalSize);
-	void generateChunks(int gridSize, int verticalSize);
 	void render(const Camera& camera, const Frustum& cameraFrustum, bool wireframeMode);
 };
 
@@ -64,7 +71,7 @@ class ChunkGenerationThread {
 private:
 	std::mutex _queueMutex;
 	std::condition_variable _condition;
-	std::queue<std::function<void()>> tasks;
+	std::queue<std::function<void()>> _tasks;
 	std::vector<std::thread> _workers;
 	std::atomic<bool> _stop;
 public:

@@ -1,8 +1,8 @@
 #ifndef FRUSTUM_H
 #define FRUSTUM_H
 
+#include <array>
 #include "Camera.h"
-
 
 struct Plane {
 	float_VEC normal = { 0.0f, 0.0f, 0.0f }; // Default normal for each plane
