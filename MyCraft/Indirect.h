@@ -24,8 +24,9 @@ struct IndirectRendering {
 	uint32_t indirectBuffer = 0;
 
 	IndirectRendering() {}
-	IndirectRendering(const std::vector<PackedVertex>& vertex, const std::vector<uint32_t>& indices);
-	void generateBufferPersistent(const std::vector<DrawCommands>& in_drawCommands);
+
+	void addDrawCommand(uint32_t count, uint32_t instanceCount, uint32_t firstIndex, uint32_t baseVertex, uint32_t baseInstance);
+	void generateBufferPersistent();
 };
 
 #endif INDIRECT_H

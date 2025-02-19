@@ -200,14 +200,12 @@ void ChunkMesh::addVisibleFaces(
 }
 
 void ChunkMesh::generate(const WorldChunk& worldChunk) {
+	aabb = AABB{ pos, pos + float_VEC(static_cast<float>(CONSTANTS::Dimension_1DSize)) };
+
 	uint32_t vertexOffset = 0;
-	auto& solidBlocks = worldChunk.solidBlocks;
-	for (const auto& solidBlock : solidBlocks) {
+	for (const auto& solidBlock : worldChunk.solidBlocks) {
 		uint8_VEC blockCoordinate = solidBlock.first; 
 		BLOCK_ID blockType = solidBlock.second;
 		addVisibleFaces(worldChunk, blockType, blockCoordinate, vertexOffset);
 	}
-
-	numVerticesIndices.first = static_cast<uint32_t>(chunkData.chunk_vertices.size());
-	numVerticesIndices.second = static_cast<uint32_t>(chunkData.chunk_indices.size());
 }

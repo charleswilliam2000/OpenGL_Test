@@ -8,13 +8,6 @@
 
 #include "PerlinNoise.hpp"
 
-struct ChunkData {
-	using Vertices = std::vector<PackedVertex>;
-	Vertices chunk_vertices;
-
-	using Indices = std::vector<uint32_t>;
-	Indices chunk_indices;
-};
 
 enum class BLOCK_ID : uint8_t {
 	AIR  = 0,
@@ -23,9 +16,9 @@ enum class BLOCK_ID : uint8_t {
 	STONE = 3
 };
 
-struct Block_ID {
+struct Block {
 	uint64_t ID : 64; // 4 bits for every one block (Thus, 4 x 16 = 64 bits)
-	inline void setID(BLOCK_ID id, uint64_t x) {
+	void setID(BLOCK_ID id, uint64_t x) {
 		if (x < CONSTANTS::Dimension_1DSize) {
 			uint64_t mask = ~(0xFULL); 
 			uint64_t shiftAmount = static_cast<uint64_t>(4) * x;
@@ -37,7 +30,7 @@ struct Block_ID {
 		
 	}
 
-	inline BLOCK_ID getID(uint64_t x) const {
+	BLOCK_ID getID(uint64_t x) const {
 		if (x < CONSTANTS::Dimension_1DSize) {
 			uint64_t shiftAmount = static_cast<uint64_t>(4) * x;
 			uint64_t mask = 0xFULL; // Mask for the lowest 4 bits
@@ -50,11 +43,11 @@ struct Block_ID {
 		}
 	}
 
-	Block_ID() : ID(0) {}
+	Block() : ID(0) {}
 };
 
 struct WorldChunk {
-	using Blocks = std::array<std::array<Block_ID, CONSTANTS::Dimension_1DSize>, CONSTANTS::Dimension_1DSize>;
+	using Blocks = std::array<std::array<Block, CONSTANTS::Dimension_1DSize>, CONSTANTS::Dimension_1DSize>;
 	using SolidBlocks = std::vector<std::pair<uint8_VEC, BLOCK_ID>>;
 
 	Blocks blocks{};
@@ -80,20 +73,19 @@ struct WorldChunk {
 };
 
 struct ChunkMesh {
-	ChunkData chunkData{};
-	float_VEC pos{};
-	std::pair<uint32_t, uint32_t> numVerticesIndices = { 0, 0 };
-
-	ChunkMesh() {}
+private:
 	void addFace(const uint8_VEC& blockWorldPos, const PackedFaceData& faceData, const BLOCK_ID& type, uint32_t& vertexOffset);
 	void addVisibleFaces(const WorldChunk& worldChunk, const BLOCK_ID& blockType, const uint8_VEC& blockCoordinate, uint32_t& vertexOffset);
-	void generate(const WorldChunk& worldChunk);
-	AABB getBoundingBox() const {
-		float_VEC worldMin = pos;
-		float_VEC worldMax = worldMin + float_VEC(static_cast<float>(CONSTANTS::Dimension_1DSize));
+public:
+	struct ChunkData {
+		std::vector<PackedVertex> chunk_vertices;
+		std::vector<uint32_t> chunk_indices;
+	} chunkData;
+	AABB aabb			= AABB{ pos, pos + float_VEC(static_cast<float>(CONSTANTS::Dimension_1DSize)) };
+	float_VEC pos		= glm::vec3{ 0.0f };
 
-		return { worldMin, worldMax };
-	}
+	ChunkMesh() {}
+	void generate(const WorldChunk& worldChunk);
 };
 
 

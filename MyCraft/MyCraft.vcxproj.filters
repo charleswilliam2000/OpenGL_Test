@@ -109,7 +109,7 @@
       <Filter>Source Files\Rendering</Filter>
     </ClCompile>
     <ClCompile Include="RenderStructures.cpp">
-      <Filter>Header Files\Miscs</Filter>
+      <Filter>Source Files\Rendering</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -153,6 +153,9 @@
       <Filter>Header Files\Rendering</Filter>
     </ClInclude>
     <ClInclude Include="Indirect.h">
+      <Filter>Header Files\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderStructures.h">
       <Filter>Header Files\Rendering</Filter>
     </ClInclude>
   </ItemGroup>

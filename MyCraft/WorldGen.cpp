@@ -88,13 +88,13 @@ World::World(int gridSize, int verticalSize) :
 	_shaderGeometryPass.use();
 	_shaderGeometryPass.setInt("textureAtlas", 1);
 
-	_shaderLightingPass.use();
-	_shaderLightingPass.setInt("gTexArray", 2);
-	_shaderLightingPass.setInt("gDepth", 3);
-	_shaderLightingPass.setInt("ssao", 4);
-
 	_shaderSSAOPass.use();
-	_shaderSSAOPass.setInt("ssaoNoise", 6);
+	_shaderSSAOPass.setInt("gTextureArray", 2);
+	_shaderSSAOPass.setInt("ssaoNoise", 4);
+
+	_shaderLightingPass.use();
+	_shaderLightingPass.setInt("gTextureArray", 2);
+	_shaderLightingPass.setInt("ssaoColorTexture", 3);
 	
 	// --- PREPARE MESH / DRAWABLE'S BUFFERS / INDIRECT MULTIDRAW COMMANDS --- 
 	generateChunks(gridSize, verticalSize);
@@ -215,47 +215,37 @@ void World::generateChunks(int gridSize, int verticalSize)
 	std::vector<PackedVertex> renderVertices; 
 	std::vector<uint32_t> renderIndices;
 
-	std::vector<IndirectRendering::DrawCommands> drawCommands(numChunks);
-	std::vector<glm::mat4> modelMatrices(numChunks);
-
 	for (size_t i = 0; i < numChunks; i++) {
 		const auto& [chunkVertices, chunkIndices] = _chunkMeshes[i].chunkData;
-		auto numVertices = static_cast<uint32_t>(chunkVertices.size());
+		auto numVertices	= static_cast<uint32_t>(chunkVertices.size());
+		auto numIndices		= static_cast<uint32_t>(chunkIndices.size());
 
 		renderVertices.insert(renderVertices.end(), chunkVertices.begin(), chunkVertices.end());
 		std::transform(chunkIndices.begin(), chunkIndices.end(), std::back_inserter(renderIndices), [&](uint32_t index) {
 			return index + vetexOffset;
 			});
 
-		modelMatrices[i] = glm::translate(glm::mat4(1.0f), glm::vec3(_chunkMeshes[i].pos));
-		drawCommands[i] = IndirectRendering::DrawCommands(
-			static_cast<uint32_t>(_chunkMeshes[i].numVerticesIndices.second),	//Counts
+		_models.addMatrix(glm::translate(glm::mat4(1.0f), glm::vec3(_chunkMeshes[i].pos)));
+		_indirect.addDrawCommand(
+			numIndices,															//Counts
 			1,																	// Instance count
 			firstIndexOffset,													// firstIndex (Index offset after the last chunk)
 			0,																	// Base vertex (Should be 0 because we are using 0 big VBO containing all vertices of the chunks)
 			0																	// Base instance (No instancing))
 		);
 
-		firstIndexOffset += static_cast<uint32_t>(_chunkMeshes[i].numVerticesIndices.second);
-		vetexOffset += numVertices;
+		firstIndexOffset += numIndices;
+		vetexOffset += numVertices;	
 	}
 
-	_modelsUBO.generateBuffers(
-		STORAGE_TYPE::GL_BUFFER_DATA_STATIC_DRAW,
-		modelMatrices.size() * sizeof(glm::mat4), 0, modelMatrices.data()
-	);
-
-	_vpUBO.generateBuffers(
-		STORAGE_TYPE::GL_BUFFER_STORAGE_INCOHERENT,
-		2 * sizeof(glm::mat4), 1, nullptr
-	);
+	_models.createUBO(STORAGE_TYPE::GL_BUFFER_DATA_STATIC_DRAW, CONSTANTS::MODELS_UBO_BINDING_POINT);
+	_viewProjection.createUBO(STORAGE_TYPE::GL_BUFFER_STORAGE_INCOHERENT, CONSTANTS::VP_UBO_BINDING_POINT);
 
 	_world.generateBuffersI(
 		renderVertices.size() * sizeof(PackedVertex), renderVertices.data(), 
 		renderIndices.size() * sizeof(uint32_t), renderIndices.data(),
 		DRAWABLE_ATTRIBUTES::DRAWABLE_PACKED_ATTRIBUTES
 	);
-
-	_indirect.generateBufferPersistent(drawCommands);
+	_indirect.generateBufferPersistent();
 }
 

@@ -1,19 +1,23 @@
 #version 460 core
 layout (location = 0) in uint aPacked;
 
-#define MAX_CHUNKS 100
-layout(std140, binding = 0) uniform ModelMatrices {
-    mat4 modelMatrices[MAX_CHUNKS];
-};
-
-layout(std140, binding = 1) uniform VPMatrices {
-	mat4 projectionMatrix;
-	mat4 viewMatrix;
-};
-
+out vec3 FragPos;
 out vec2 TexCoords;
 out vec3 Normal;
 out float LayerIndex;
+
+const int MAX_CHUNKS = 100;
+layout(std140, binding = 0) uniform ubo_ModelMatrices {
+    mat4 modelMatrices[MAX_CHUNKS];
+};
+
+layout(std140, binding = 1) uniform ubo_VPMatrices {
+	mat4 projection;
+	mat4 view;
+
+    mat4 inverseProjection;
+    mat4 inverseView;
+};
 
 const vec3 normalsArr[6] = vec3[](
     vec3(-1.0, 0.0, 0.0),
@@ -34,11 +38,12 @@ void main() {
     float y = float((aPacked >> 5) & coord_mask);
     float z = float((aPacked >> 10) & coord_mask);
 
-	vec4 worldPos = model * vec4(vec3(x, y, z), 1.0);
+	vec4 viewPos = view * model * vec4(vec3(x, y, z), 1.0);
+    FragPos = viewPos.xyz;
 
     int normals_mask = 7; // Binary: 111
     uint normals_index = uint((aPacked >> 15) & normals_mask);
-    Normal = u_NormalMat * normalsArr[normals_index];
+    Normal = transpose(inverse(mat3(view * model))) * normalsArr[normals_index];
 
     float v = float((aPacked >> 18) & 1); 
     float u = float((aPacked >> 19) & 1); 
@@ -47,5 +52,5 @@ void main() {
     int texture_mask = 15; // 1111
     LayerIndex = float((aPacked >> 20) & texture_mask);
 
-    gl_Position = projectionMatrix * viewMatrix * worldPos;
+    gl_Position = projection * viewPos;
 }

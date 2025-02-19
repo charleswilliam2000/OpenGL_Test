@@ -24,7 +24,7 @@ struct DrawableFloatAttributes {
     GLenum type;
     GLboolean normalized;
     GLsizei stride;
-    GLsizei offset;  // Changed from const void* to std::size_t
+    GLsizei offset;  
 
     constexpr DrawableFloatAttributes(GLuint index, GLuint size, GLenum type, GLboolean normalized, GLsizei stride, GLsizei offset)
         : index(index), size(size), type(type), normalized(normalized), stride(stride), offset(offset) {
@@ -69,16 +69,18 @@ public:
 };
 
 enum class STORAGE_TYPE : uint32_t {
-    GL_BUFFER_DATA_STATIC_DRAW = 0,
-    GL_BUFFER_DATA_DYNAMIC_DRAW = 1,
-    GL_BUFFER_STORAGE_COHERENT = 2,
-    GL_BUFFER_STORAGE_INCOHERENT = 3
+    DEFAULT = 0,
+    GL_BUFFER_DATA_STATIC_DRAW = 1,
+    GL_BUFFER_DATA_DYNAMIC_DRAW = 2,
+    GL_BUFFER_STORAGE_COHERENT = 3,
+    GL_BUFFER_STORAGE_INCOHERENT = 4
 };
 
 struct UniformBufferObjects {
 public:
-    GLuint handle = 0, bindingPoint = 0, bufferSize = 0;
     void* persistentPtr = nullptr;
+    STORAGE_TYPE storageType = STORAGE_TYPE::DEFAULT;
+    GLuint handle = 0, bindingPoint = 0, bufferSize = 0;
 
     UniformBufferObjects() {}
 
@@ -101,7 +103,7 @@ public:
 
 struct GeometryBufferObjects {
 public:
-    GLuint gFBO = 0, gDepthText = 0, gTextArray = 0; // gBuffers
+    GLuint gFBO = 0, gTextureArray = 0, rboDepth = 0; // gBuffers
 
     GeometryBufferObjects() {}
     void generateBuffers(int windowWidth, int windowHeight);
@@ -111,33 +113,9 @@ public:
 
     ~GeometryBufferObjects() {
         glDeleteFramebuffers(1, &gFBO);
-        glDeleteTextures(1, &gTextArray);
-        glDeleteTextures(1, &gDepthText);
+        glDeleteTextures(1, &gTextureArray);
+        glDeleteRenderbuffers(1, &rboDepth);
     }
 };
-
-namespace PostProcessing {
-    struct SSAO {
-        UniformBufferObjects ssaoKernelsUBO;
-
-        GLuint ssaoFBO = 0, ssaoColorText = 0;
-        GLuint ssaoBlurFBO = 0, ssaoBlurText = 0;
-        GLuint ssaoNoise = 0;
-
-        SSAO() {}
-        void generateSSAO(int windowWidth, int windowHeight);
-
-        SSAO(const SSAO&) = delete;
-        SSAO& operator=(const SSAO&) = delete;
-
-        ~SSAO() {
-            glDeleteFramebuffers(1, &ssaoFBO);
-            glDeleteFramebuffers(1, &ssaoBlurFBO);
-            glDeleteTextures(1, &ssaoColorText);
-            glDeleteTextures(1, &ssaoBlurText);
-            glDeleteTextures(1, &ssaoNoise);
-        }
-    };
-}
 
 #endif // BUFFERS_H

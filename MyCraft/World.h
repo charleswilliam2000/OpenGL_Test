@@ -17,14 +17,14 @@
 #include <random>
 
 #include "Constants.h"
-#include "vectors.h"
-#include "Indirect.h"
+#include "Vectors.h"
+
 #include "Shader.h"
 #include "Texture.h"
-#include "Chunk.h"
+#include "Indirect.h"
+#include "RenderStructures.h"
 
-using UniformsVEC3 = std::pair<const char*, glm::vec3>;
-using Uniforms1F = std::pair<const char*, float>;
+#include "Chunk.h"
 
 namespace WorldUtils {
 	std::array<uint8_t, CONSTANTS::Dimension_2DSize> sampleHeightmap(const siv::PerlinNoise& perlin, uint32_t baseTerrainElevation, const float_VEC& chunkOffset);
@@ -33,20 +33,17 @@ namespace WorldUtils {
 class World {
 	using WorldChunks = std::vector<WorldChunk>;
 	using ChunkMeshes = std::vector<ChunkMesh>;
-	using PointLightPositions = std::vector<glm::vec3>;
-
 private:
-	void setDirectionalLightUniform() const;
 	void updateCameraChunkPos(const float_VEC& cameraPos);
 
 	void renderQuad() const;
 	void generateChunks(int gridSize, int verticalSize);
 
-	PostProcessing::SSAO _ssao;
-	IndirectRendering _indirect;
+	ViewProjectionMatrices _viewProjection;
+	ModelMatrices _models;
 
-	UniformBufferObjects _vpUBO;
-	UniformBufferObjects _modelsUBO;
+	SSAO _ssao;
+	IndirectRendering _indirect;
 
 	WorldChunks _worldChunks;
 	ChunkMeshes _chunkMeshes;
