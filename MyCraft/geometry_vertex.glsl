@@ -1,7 +1,6 @@
 #version 460 core
 layout (location = 0) in uint aPacked;
 
-out vec3 FragPos;
 out vec2 TexCoords;
 out vec3 Normal;
 out float LayerIndex;
@@ -19,6 +18,10 @@ layout(std140, binding = 1) uniform ubo_VPMatrices {
     mat4 inverseView;
 };
 
+layout (std140, binding = 2) uniform ubo_NormalMatrices {
+    mat4 normalMatrices[MAX_CHUNKS];
+};
+
 const vec3 normalsArr[6] = vec3[](
     vec3(-1.0, 0.0, 0.0),
     vec3(0.0, -1.0, 0.0),
@@ -27,8 +30,6 @@ const vec3 normalsArr[6] = vec3[](
     vec3(0.0, 1.0, 0.0),
     vec3(0.0, 0.0, 1.0)
 );
-
-uniform mat3 u_NormalMat;
 
 void main() {
     mat4 model = modelMatrices[gl_DrawID];
@@ -39,11 +40,10 @@ void main() {
     float z = float((aPacked >> 10) & coord_mask);
 
 	vec4 viewPos = view * model * vec4(vec3(x, y, z), 1.0);
-    FragPos = viewPos.xyz;
 
     int normals_mask = 7; // Binary: 111
     uint normals_index = uint((aPacked >> 15) & normals_mask);
-    Normal = transpose(inverse(mat3(view * model))) * normalsArr[normals_index];
+    Normal = mat3(normalMatrices[gl_DrawID]) * normalsArr[normals_index];
 
     float v = float((aPacked >> 18) & 1); 
     float u = float((aPacked >> 19) & 1); 

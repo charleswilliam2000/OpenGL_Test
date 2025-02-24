@@ -90,11 +90,13 @@ World::World(int gridSize, int verticalSize) :
 
 	_shaderSSAOPass.use();
 	_shaderSSAOPass.setInt("gTextureArray", 2);
-	_shaderSSAOPass.setInt("ssaoNoise", 4);
+	_shaderSSAOPass.setInt("gDepth", 3);
+	_shaderSSAOPass.setInt("ssaoNoise", 6);
 
 	_shaderLightingPass.use();
 	_shaderLightingPass.setInt("gTextureArray", 2);
-	_shaderLightingPass.setInt("ssaoColorTexture", 3);
+	_shaderLightingPass.setInt("gDepth", 3);
+	_shaderLightingPass.setInt("ssaoColorTexture", 4);
 	
 	// --- PREPARE MESH / DRAWABLE'S BUFFERS / INDIRECT MULTIDRAW COMMANDS --- 
 	generateChunks(gridSize, verticalSize);
@@ -238,7 +240,10 @@ void World::generateChunks(int gridSize, int verticalSize)
 		vetexOffset += numVertices;	
 	}
 
-	_models.createUBO(STORAGE_TYPE::GL_BUFFER_DATA_STATIC_DRAW, CONSTANTS::MODELS_UBO_BINDING_POINT);
+	_models.createUBO(
+		STORAGE_TYPE::GL_BUFFER_DATA_STATIC_DRAW, CONSTANTS::MODELS_UBO_BINDING_POINT, 
+		STORAGE_TYPE::GL_BUFFER_STORAGE_INCOHERENT, CONSTANTS::NORMAL_MATRICES_BINDING_POINT
+	);
 	_viewProjection.createUBO(STORAGE_TYPE::GL_BUFFER_STORAGE_INCOHERENT, CONSTANTS::VP_UBO_BINDING_POINT);
 
 	_world.generateBuffersI(

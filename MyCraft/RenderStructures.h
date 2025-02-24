@@ -43,26 +43,22 @@ class ModelMatrices {
 private:
 	std::vector<glm::mat4> _modelMatrices;
 	UniformBufferObjects _modelUBO;
+	UniformBufferObjects _modelNormalMapUBO;
 public:
+	const std::vector<glm::mat4>& getModelMatrices() const;
 	void addMatrix(const glm::mat4& modelMatrix);
-	void createUBO(STORAGE_TYPE type, GLuint bindingPoint);
-	void bindToShader(GLuint shaderProgram);
+	void createUBO(STORAGE_TYPE modelUBOType, GLuint modelUBOBindingPoint, STORAGE_TYPE modelNormalMapUBOType, GLuint modelNormalMapUBOBindingPoint);
+	void bindToShader(const glm::mat4& viewMatrix, const GLuint& shaderProgram) const;
 };
 
 class ViewProjectionMatrices {
 private:
-	glm::mat4 _projection{};
-	glm::mat4 _view{};
-
-	glm::mat4 _inverseProjection{};
-	glm::mat4 _inverseView{};
-
 	UniformBufferObjects _viewProjectionUBO;
 public:
 	ViewProjectionMatrices() {}
 	void createUBO(STORAGE_TYPE type, GLuint bindingPoint);
-	void bindToShader(GLuint shaderProgram);
-	void updateViewProjection(const Camera& camera, const GLuint& shaderProgram);
+	void bindToShader(GLuint shaderProgram) const;
+	void updateViewProjection(const glm::mat4& viewMatrix, const GLuint& shaderProgram);
 };
 
 #endif // RENDER_STRUCTURES_H

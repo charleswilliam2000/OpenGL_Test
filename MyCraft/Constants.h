@@ -2,8 +2,8 @@
 #define CONSTANTS_H
 
 namespace CONSTANTS {
-	constexpr int WINDOW_HEIGHT = 1060;
 	constexpr int WINDOW_WIDTH = 1920;
+	constexpr int WINDOW_HEIGHT = 1020;
 
 	constexpr size_t Dimension_1DSize = 16;
 	constexpr size_t Dimension_2DSize = 256;
@@ -12,7 +12,8 @@ namespace CONSTANTS {
 
 	constexpr size_t MODELS_UBO_BINDING_POINT = 0;
 	constexpr size_t VP_UBO_BINDING_POINT = 1;
-	constexpr size_t SSAO_KERNELS_BINDING_POINT = 2;
+	constexpr size_t NORMAL_MATRICES_BINDING_POINT = 2;
+	constexpr size_t SSAO_KERNELS_BINDING_POINT = 3;
 }
 
 #endif // CONSTANTS_H

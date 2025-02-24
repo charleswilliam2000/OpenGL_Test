@@ -56,11 +56,14 @@ void World::render(const Camera& camera, const Frustum& cameraFrustum, bool wire
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		_shaderGeometryPass.use();
-		_models.bindToShader(_shaderGeometryPass.ID);
-		_viewProjection.updateViewProjection(camera, _shaderGeometryPass.ID);
+
+		const glm::mat4 view = camera.updateCameraView();
+		_models.bindToShader(view, _shaderGeometryPass.ID);
+		_viewProjection.updateViewProjection(view, _shaderGeometryPass.ID);
 
 		// ---FRUSTUM CULLING---
 		updateCameraChunkPos(camera.getVector(CameraVectors::POS));
+
 		for (size_t i = 0; i < _chunkMeshes.size(); i++) {
 			bool outsideFrustum = (_chunkMeshes[i].pos.z <= _cameraChunkPos.z) ? true : _chunkMeshes[i].aabb.isOutsideFrustum(cameraFrustum);
 			_indirect.drawCommands[i].instanceCount = (outsideFrustum) ? 0 : 1;
@@ -80,6 +83,8 @@ void World::render(const Camera& camera, const Frustum& cameraFrustum, bool wire
 		glBindVertexArray(0);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+		glDisable(GL_DEPTH_TEST);
+
 	// --- AMBIENT OCCLUSION PASS ---
 	glBindFramebuffer(GL_FRAMEBUFFER, _ssao.ssaoFBO);
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -90,10 +95,12 @@ void World::render(const Camera& camera, const Frustum& cameraFrustum, bool wire
 
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D_ARRAY, _deferred.gTextureArray);
-		glActiveTexture(GL_TEXTURE5);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, _deferred.depthTexture);
+		glActiveTexture(GL_TEXTURE6);
 		glBindTexture(GL_TEXTURE_2D, _ssao.ssaoNoise);
 
-		_shaderSSAOPass.setVec2("screenSize", glm::vec2(CONSTANTS::WINDOW_WIDTH, CONSTANTS::MAX_BLOCK_HEIGHT));
+		_shaderSSAOPass.setVec2("screenSize", glm::vec2(CONSTANTS::WINDOW_WIDTH, CONSTANTS::WINDOW_HEIGHT));
 		renderQuad();
 
 	// ---LIGHTING PASS---
@@ -106,6 +113,8 @@ void World::render(const Camera& camera, const Frustum& cameraFrustum, bool wire
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D_ARRAY, _deferred.gTextureArray);
 		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, _deferred.depthTexture);
+		glActiveTexture(GL_TEXTURE4);
 		glBindTexture(GL_TEXTURE_2D, _ssao.ssaoColorText);
 
 		_shaderLightingPass.setVec3("cameraPos", camera.getVector(CameraVectors::POS));

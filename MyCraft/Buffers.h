@@ -103,7 +103,7 @@ public:
 
 struct GeometryBufferObjects {
 public:
-    GLuint gFBO = 0, gTextureArray = 0, rboDepth = 0; // gBuffers
+    GLuint gFBO = 0, gTextureArray = 0, depthTexture = 0; // gBuffers
 
     GeometryBufferObjects() {}
     void generateBuffers(int windowWidth, int windowHeight);
@@ -114,7 +114,7 @@ public:
     ~GeometryBufferObjects() {
         glDeleteFramebuffers(1, &gFBO);
         glDeleteTextures(1, &gTextureArray);
-        glDeleteRenderbuffers(1, &rboDepth);
+        glDeleteTextures(1, &depthTexture);
     }
 };
 
